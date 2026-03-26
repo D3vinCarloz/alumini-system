@@ -1,7 +1,6 @@
 
   # Design project layout
 
-  This is a code bundle for Design project layout. The original project is available at https://www.figma.com/design/nbK6d98dThCG6Q4VztePKN/Design-project-layout.
 
   ## Running the code
 
