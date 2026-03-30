@@ -4,11 +4,11 @@ const path   = require('path');
 const fs     = require('fs');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { createNotification } = require('../config/notify');
-const upload = require('../config/upload');
+const { uploadResume } = require('../config/upload');
 
 // POST /api/applications/:jobId — student applies with resume
 router.post('/:jobId', authenticate, requireRole('student'),
-  upload.single('resume'),
+  uploadResume.single('resume'),
   async (req, res) => {
     try {
       const { jobId } = req.params;
@@ -66,7 +66,8 @@ router.get('/my', authenticate, requireRole('student'), async (req, res) => {
       SELECT a.Application_ID, a.Status, a.Applied_Date,
              a.Resume_Path,
              j.Job_ID, j.Job_Title, j.Company_Name, j.Description,
-             u.Name AS postedByName
+             u.Name AS postedByName, 
+             u.Profile_Pic AS postedByProfilePic /* 👈 ADDED */
       FROM   JOB_APPLICATIONS a
       JOIN   JOB_POSTINGS j ON j.Job_ID    = a.Job_ID
       JOIN   ALUMNI al      ON al.Alumni_ID = j.Alumni_ID
@@ -87,12 +88,12 @@ router.get('/job/:jobId', authenticate, requireRole('alumni'), async (req, res) 
     const [rows] = await db.query(`
       SELECT a.Application_ID, a.Status, a.Applied_Date,
              a.Resume_Path,
-             u.Name AS studentName, u.Email AS studentEmail,
+             u.Name AS studentName, u.Email AS studentEmail, 
+             u.Profile_Pic, /* 👈 ADDED */
              s.Roll_No, s.Department
       FROM   JOB_APPLICATIONS a
-      JOIN   STUDENT st ON st.Student_ID = a.Student_ID
-      JOIN   USER u     ON u.User_ID     = st.User_ID
-      JOIN   STUDENT s  ON s.Student_ID  = a.Student_ID
+      JOIN   STUDENT s  ON s.Student_ID = a.Student_ID /* 👈 Cleaned up redundant JOIN */
+      JOIN   USER u     ON u.User_ID    = s.User_ID
       WHERE  a.Job_ID = ?
       ORDER  BY a.Applied_Date DESC
     `, [req.params.jobId]);

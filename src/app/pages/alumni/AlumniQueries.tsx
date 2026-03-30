@@ -6,10 +6,12 @@ import { Link } from 'react-router';
 import { MessageSquare } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import { toast } from 'sonner';
+import { UserAvatar } from '../../components/UserAvatar'; // 👈 IMPORT ADDED
 
 interface Query {
   Query_ID: number;
   studentName: string;
+  Profile_Pic?: string | null; // 👈 ADDED
   Content: string;
   Status: 'pending' | 'answered';
   Query_Date: string;
@@ -48,7 +50,7 @@ export function AlumniQueries() {
               <thead>
                 <tr className="border-b border-border">
                   <th className="text-left py-3 px-4 font-medium">Student</th>
-                  <th className="text-left py-3 px-4 font-medium">Question</th>
+                  <th className="text-left py-3 px-4 font-medium">My Reply</th>
                   <th className="text-left py-3 px-4 font-medium">Status</th>
                   <th className="text-left py-3 px-4 font-medium">Date</th>
                   <th className="text-left py-3 px-4 font-medium">Action</th>
@@ -73,7 +75,17 @@ export function AlumniQueries() {
                       key={query.Query_ID}
                       className="border-b border-border hover:bg-secondary/50"
                     >
-                      <td className="py-4 px-4 font-medium">{query.studentName}</td>
+                      {/* 👈 UPDATED COLUMN: Flex container with UserAvatar */}
+                      <td className="py-4 px-4">
+                        <div className="flex items-center gap-3">
+                          <UserAvatar 
+                            profilePic={query.Profile_Pic} 
+                            name={query.studentName} 
+                            className="size-8 text-xs" 
+                          />
+                          <span className="font-medium">{query.studentName}</span>
+                        </div>
+                      </td>
                       <td className="py-4 px-4 max-w-md">
                         <p className="truncate text-muted-foreground">
                           {query.Content}

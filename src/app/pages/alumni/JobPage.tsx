@@ -13,6 +13,7 @@ import { Briefcase, Plus, Trash2, Users, FileText } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
+import { UserAvatar } from '../../components/UserAvatar';
 
 interface JobPosting {
   Job_ID: number;
@@ -27,6 +28,7 @@ interface Applicant {
   Application_ID: number;
   studentName: string;
   studentEmail: string;
+  Profile_Pic?: string | null;
   Roll_No: string;
   Department: string;
   Applied_Date: string;
@@ -41,7 +43,6 @@ const statusColors: Record<string, string> = {
   rejected:    'bg-red-100 text-red-700',
 };
 
-// ─── Resume viewer helper ─────────────────────────────────────────────────────
 async function openResume(filename: string) {
   try {
     const token = localStorage.getItem('token');
@@ -58,7 +59,6 @@ async function openResume(filename: string) {
   }
 }
 
-// ─── Applicants Section ───────────────────────────────────────────────────────
 function ApplicantsSection({ jobId }: { jobId: number }) {
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [loading, setLoading]       = useState(true);
@@ -121,34 +121,40 @@ function ApplicantsSection({ jobId }: { jobId: number }) {
                 key={app.Application_ID}
                 className="flex items-start justify-between p-3 rounded-lg border border-border bg-muted/20"
               >
-                {/* Applicant info */}
-                <div className="space-y-0.5">
-                  <p className="text-sm font-medium">{app.studentName}</p>
-                  <p className="text-xs text-muted-foreground">{app.studentEmail}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {app.Department}{app.Roll_No ? ` · ${app.Roll_No}` : ''}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Applied {new Date(app.Applied_Date).toLocaleDateString()}
-                  </p>
+                <div className="flex items-start gap-3">
+                  
+                  <UserAvatar 
+                    profilePic={app.Profile_Pic} 
+                    name={app.studentName} 
+                    className="size-10 text-sm mt-0.5" 
+                  />
 
-                  {/* Resume button */}
-                  {app.Resume_Path ? (
-                    <button
-                      onClick={() => openResume(app.Resume_Path!)}
-                      className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline mt-1"
-                    >
-                      <FileText className="size-3.5" />
-                      View Resume
-                    </button>
-                  ) : (
-                    <p className="text-xs text-muted-foreground italic mt-1">
-                      No resume uploaded
+                  <div className="space-y-0.5">
+                    <p className="text-sm font-medium">{app.studentName}</p>
+                    <p className="text-xs text-muted-foreground">{app.studentEmail}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {app.Department}{app.Roll_No ? ` · ${app.Roll_No}` : ''}
                     </p>
-                  )}
+                    <p className="text-xs text-muted-foreground">
+                      Applied {new Date(app.Applied_Date).toLocaleDateString()}
+                    </p>
+
+                    {app.Resume_Path ? (
+                      <button
+                        onClick={() => openResume(app.Resume_Path!)}
+                        className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline mt-1"
+                      >
+                        <FileText className="size-3.5" />
+                        View Resume
+                      </button>
+                    ) : (
+                      <p className="text-xs text-muted-foreground italic mt-1">
+                        No resume uploaded
+                      </p>
+                    )}
+                  </div>
                 </div>
 
-                {/* Status controls */}
                 <div className="flex flex-col items-end gap-2 shrink-0 ml-4">
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColors[app.Status] ?? ''}`}>
                     {app.Status.charAt(0).toUpperCase() + app.Status.slice(1)}
@@ -157,7 +163,7 @@ function ApplicantsSection({ jobId }: { jobId: number }) {
                     disabled={updatingId === app.Application_ID}
                     value={app.Status}
                     onChange={e => handleStatusChange(app.Application_ID, e.target.value)}
-                    className="text-xs border border-border rounded px-1.5 py-1 bg-background cursor-pointer"
+                    className="text-xs border border-border rounded px-1.5 py-1 bg-background cursor-pointer focus:ring-1 focus:ring-primary outline-none"
                   >
                     <option value="applied">Applied</option>
                     <option value="viewed">Viewed</option>
@@ -174,7 +180,6 @@ function ApplicantsSection({ jobId }: { jobId: number }) {
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
 export function JobPage() {
   const { user }  = useAuth();
   const [jobPostings, setJobPostings] = useState<JobPosting[]>([]);
@@ -183,12 +188,29 @@ export function JobPage() {
   const [submitting, setSubmitting]   = useState(false);
   const [deletingId, setDeletingId]   = useState<number | null>(null);
 
-  // Form state
   const [title, setTitle]             = useState('');
   const [company, setCompany]         = useState('');
   const [description, setDescription] = useState('');
 
+  // 🟢 FIXED: Check for token to avoid 401 error
+  useEffect(() => {
+    if (!localStorage.getItem('token')) return; 
+
+    apiFetch('/notifications/read-by-type', {
+      method: 'PUT',
+      body: JSON.stringify({ types: ['application', 'job', 'application_status'] })
+    })
+    .then(() => window.dispatchEvent(new Event('notifications-updated')))
+    .catch(err => console.error('Failed to clear job notifications', err));
+  }, []);
+
   const loadJobs = async () => {
+    // 🟢 FIXED: Check for token to avoid 401 error
+    if (!localStorage.getItem('token')) {
+      setLoading(false);
+      return;
+    }
+
     try {
       const data = await apiFetch<JobPosting[]>('/jobs');
       setJobPostings(data.filter(j => j.Alumni_ID === user?.subId));
@@ -253,14 +275,12 @@ export function JobPage() {
     <DashboardLayout title="Job Postings">
       <div className="space-y-6">
 
-        {/* Header */}
         <div className="flex justify-between items-center">
           <div>
             <h2 className="text-2xl font-semibold">Your Job Postings</h2>
             <p className="text-muted-foreground mt-1">Share opportunities with students</p>
           </div>
 
-          {/* Trigger button — plain div to avoid nested button */}
           <div
             onClick={() => setIsDialogOpen(true)}
             className="inline-flex items-center gap-2 h-9 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors cursor-pointer select-none"
@@ -270,7 +290,6 @@ export function JobPage() {
           </div>
         </div>
 
-        {/* Add Job Dialog */}
         <Dialog
           open={isDialogOpen}
           onOpenChange={open => { setIsDialogOpen(open); if (!open) resetForm(); }}
@@ -323,7 +342,6 @@ export function JobPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Job list */}
         {loading ? (
           <Card>
             <CardContent className="py-12 text-center">
@@ -366,7 +384,6 @@ export function JobPage() {
                     Posted on {new Date(job.Posting_Date).toLocaleDateString()}
                   </p>
 
-                  {/* Applicants collapsible */}
                   <ApplicantsSection jobId={job.Job_ID} />
                 </CardContent>
               </Card>

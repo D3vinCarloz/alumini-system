@@ -1,199 +1,160 @@
 import { useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router';
+import { useParams, useNavigate, Link } from 'react-router'; // 👈 Added Link
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
-import { Send } from 'lucide-react';
+import { Send, ArrowLeft } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
-
-interface Reply {
-  Reply_ID: number;
-  User_ID: number;
-  senderName: string;
-  Content: string;
-  Reply_Date: string;
-}
-
-interface Query {
-  Query_ID: number;
-  studentName: string;
-  alumniName: string;
-  Content: string;
-  Status: string;
-  Query_Date: string;
-  messages: Reply[];
-}
+import { UserAvatar } from '../../components/UserAvatar'; // 👈 Added UserAvatar
 
 export function ChatPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
-  const [query, setQuery] = useState<Query | null>(null);
+  const [query, setQuery] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  const loadQuery = async () => {
+  // 👈 Signal the Header to refresh the unread notification count
+  const refreshBell = () => {
+    window.dispatchEvent(new Event('notifications-updated'));
+  };
+
+  const loadQuery = async (quiet = false) => {
     if (!id) return;
+    if (!quiet) setLoading(true);
     try {
-      const data = await apiFetch<Query>(`/queries/${id}`);
+      // Use timestamp ?t= to bypass browser cache
+      const data = await apiFetch<any>(`/queries/${id}?t=${Date.now()}`);
       setQuery(data);
+      
+      // 👈 Clear the red badge in the header instantly
+      refreshBell(); 
     } catch (err) {
       console.error('Failed to load conversation:', err);
-      setNotFound(true);
     } finally {
-      setLoading(false);
+      if (!quiet) setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadQuery();
-  }, [id]);
+  useEffect(() => { loadQuery(); }, [id]);
 
-  // Scroll to bottom whenever messages change
+  // Always scroll to the latest message
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [query?.messages]);
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || !user || !query) return;
     setSending(true);
+    const content = newMessage;
+    setNewMessage('');
+
+    // Optimistic UI: Add the message to the screen before the server responds
+    const tempMsg = {
+      Reply_ID: Date.now(),
+      User_ID: user.id,
+      senderName: user.name,
+      Content: content,
+      Reply_Date: new Date().toISOString(),
+    };
+    setQuery((prev: any) => prev ? { ...prev, messages: [...prev.messages, tempMsg] } : null);
+
     try {
       await apiFetch(`/replies/${id}`, {
         method: 'POST',
-        body: JSON.stringify({ content: newMessage }),
+        body: JSON.stringify({ content }),
       });
-      setNewMessage('');
-      await loadQuery(); // re-fetch to show new reply
+      // Quietly reload to sync final timestamps and IDs
+      await loadQuery(true); 
     } catch (err) {
-      console.error(err);
-      toast.error('Failed to send message. Please try again.');
+      toast.error('Failed to send message.');
+      await loadQuery(true); // Rollback optimistic update on error
     } finally {
       setSending(false);
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !sending) handleSendMessage();
-  };
+  if (loading) return <DashboardLayout title="Chat"><div className="p-12 text-center text-muted-foreground">Loading Chat...</div></DashboardLayout>;
+  if (!query) return <DashboardLayout title="Chat"><div className="p-12 text-center text-muted-foreground">Conversation not found.</div></DashboardLayout>;
 
-  if (loading) {
-    return (
-      <DashboardLayout title="Chat">
-        <Card>
-          <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground">Loading conversation...</p>
-          </CardContent>
-        </Card>
-      </DashboardLayout>
-    );
-  }
-
-  if (notFound || !query) {
-    return (
-      <DashboardLayout title="Chat">
-        <Card>
-          <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground">Conversation not found.</p>
-          </CardContent>
-        </Card>
-      </DashboardLayout>
-    );
-  }
-
-  const isStudent   = user?.role === 'student';
-  const otherPerson = isStudent ? query.alumniName : query.studentName;
+  const isMe = (uid: number) => uid === user?.id;
+  
+  // 👈 NEW: Dynamic identity logic for the Header
+  const isStudent = user?.role === 'student';
+  const otherPersonName = isStudent ? query.alumniName : query.studentName;
+  const otherPersonPic = isStudent ? query.alumniProfilePic : query.studentProfilePic;
+  const profileLink = isStudent ? `/alumni/${query.Alumni_ID}` : `/student/${query.Student_ID}`;
 
   return (
-    <DashboardLayout title={`Chat with ${otherPerson}`}>
-      <div className="max-w-4xl mx-auto">
-        <Card className="h-[calc(100vh-220px)] flex flex-col">
-          <CardHeader className="border-b border-border">
-            <CardTitle>Conversation with {otherPerson}</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Started on {new Date(query.Query_Date).toLocaleDateString()}
-            </p>
+    <DashboardLayout title={`Chat with ${otherPersonName}`}>
+      <div className="max-w-4xl mx-auto space-y-4">
+        <Button variant="ghost" onClick={() => navigate(-1)} className="flex items-center gap-2 pl-0 text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="size-4" /> Back
+        </Button>
+
+        <Card className="h-[calc(100vh-220px)] flex flex-col shadow-lg border-none bg-background overflow-hidden">
+          
+          {/* 👈 UPDATED HEADER: Now clickable with Avatar */}
+          <CardHeader className="border-b bg-muted/10 px-6 py-3">
+            <Link to={profileLink} className="flex items-center gap-3 hover:opacity-80 transition-opacity w-fit group outline-none">
+              <UserAvatar 
+                profilePic={otherPersonPic} 
+                name={otherPersonName} 
+                className="size-11 border bg-background group-hover:border-primary/50 transition-colors" 
+              />
+              <div className="flex flex-col">
+                <CardTitle className="text-base font-bold text-foreground/90 group-hover:text-primary transition-colors">
+                  {otherPersonName}
+                </CardTitle>
+                <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider mt-0.5">
+                  {isStudent ? 'Alumni' : 'Student'}
+                </p>
+              </div>
+            </Link>
           </CardHeader>
 
-          {/* Messages Area */}
-          <CardContent className="flex-1 overflow-y-auto p-6 space-y-4">
-
-            {/* Initial query as the first message bubble */}
-            <div className={`flex ${isStudent ? 'justify-end' : 'justify-start'}`}>
-              <div className="max-w-[70%]">
-                <div className={`rounded-lg px-4 py-3 ${
-                  isStudent
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-secondary text-foreground'
-                }`}>
-                  <p className="text-sm">{query.Content}</p>
-                </div>
-                <div className={`flex items-center gap-2 mt-1 px-1 ${isStudent ? 'justify-end' : 'justify-start'}`}>
-                  <p className="text-xs text-muted-foreground">{query.studentName}</p>
-                  <span className="text-xs text-muted-foreground">•</span>
-                  <p className="text-xs text-muted-foreground">
-                    {new Date(query.Query_Date).toLocaleString()}
-                  </p>
-                </div>
+          <CardContent className="flex-1 overflow-y-auto p-6 space-y-4 bg-muted/10">
+            {/* Initial Question */}
+            <div className={`flex ${user?.role === 'student' ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${user?.role === 'student' ? 'bg-primary text-white rounded-br-none' : 'bg-card border rounded-bl-none'}`}>
+                {query.Content}
+                <p className={`text-[9px] mt-1 opacity-60 text-right ${user?.role === 'student' ? 'text-white/80' : 'text-muted-foreground'}`}>
+                    {new Date(query.Query_Date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </p>
               </div>
             </div>
 
-            {/* Replies */}
-            {query.messages.map((message) => {
-              const isSentByMe = message.User_ID === user?.id;
-
-              return (
-                <div
-                  key={message.Reply_ID}
-                  className={`flex ${isSentByMe ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div className="max-w-[70%]">
-                    <div className={`rounded-lg px-4 py-3 ${
-                      isSentByMe
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-secondary text-foreground'
-                    }`}>
-                      <p className="text-sm">{message.Content}</p>
-                    </div>
-                    <div className={`flex items-center gap-2 mt-1 px-1 ${isSentByMe ? 'justify-end' : 'justify-start'}`}>
-                      <p className="text-xs text-muted-foreground">{message.senderName}</p>
-                      <span className="text-xs text-muted-foreground">•</span>
-<p className="text-xs text-muted-foreground">
-  {new Date(query.Query_Date).toLocaleString('en-IN', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-  })}
-</p>
-                    </div>
-                  </div>
+            {/* Conversation History */}
+            {query.messages.map((m: any) => (
+              <div key={m.Reply_ID} className={`flex ${isMe(m.User_ID) ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${isMe(m.User_ID) ? 'bg-primary text-white rounded-br-none' : 'bg-card border rounded-bl-none'}`}>
+                  {m.Content}
+                  <p className={`text-[9px] mt-1 opacity-60 text-right ${isMe(m.User_ID) ? 'text-white/80' : 'text-muted-foreground'}`}>
+                    {new Date(m.Reply_Date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </p>
                 </div>
-              );
-            })}
-
-            {/* Auto-scroll anchor */}
+              </div>
+            ))}
             <div ref={bottomRef} />
           </CardContent>
 
-          {/* Input Area */}
-          <div className="p-4 border-t border-border">
+          {/* Messenger Input */}
+          <div className="p-4 border-t bg-card">
             <div className="flex gap-2">
               <Input
                 placeholder="Type your message..."
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                disabled={sending}
-                className="flex-1 bg-input-background"
+                onKeyPress={(e) => e.key === 'Enter' && !sending && handleSendMessage()}
+                className="flex-1 bg-muted/30 border-none rounded-full px-4"
               />
-              <Button onClick={handleSendMessage} size="icon" disabled={sending}>
+              <Button onClick={handleSendMessage} size="icon" disabled={sending || !newMessage.trim()} className="rounded-full shadow-md shrink-0">
                 <Send className="size-4" />
               </Button>
             </div>

@@ -23,18 +23,19 @@ import { Register } from './pages/Register';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { StudentProfile } from './pages/student/StudentProfile';
 import { StudentJobsPage } from './pages/student/StudentJobsPage';
+
 // Helper component to route chat to correct component based on role
 function JobsRouter() {
   const { user } = useAuth();
   if (user?.role === 'alumni') return <JobPage />;
   return <StudentJobsPage />;
 }
+
 function ChatRouter() {
   const { user } = useAuth();
-
   if (user?.role === 'student') return <StudentChatPage />;
   if (user?.role === 'alumni')  return <AlumniChatPage />;
-  if (user?.role === 'admin')   return <StudentChatPage />; // ← ADD THIS
+  if (user?.role === 'admin')   return <StudentChatPage />;
   return <Navigate to="/dashboard" replace />;
 }
 
@@ -44,20 +45,36 @@ function ProfileRouter() {
   if (user?.role === 'alumni') return <Navigate to="/alumni-profile" replace />;
   return <StudentProfile />;
 }
+
 export const router = createBrowserRouter([
   {
     path: '/',
     element: <Navigate to="/login" replace />
   },
-  { path: '/events', element: <EventsPage /> },
-  
-
-{ path: '/profile', element: <ProfileRouter /> },
-{ path: '/notifications', element: <NotificationsPage /> },
-{ path: '/register', element: <Register /> },
-{ path: '/alumni-profile', element: <AlumniProfilePage /> },
-{ path: '/my-applications', element: <MyApplications /> },
-{ path: '/profile',         element: <StudentProfile /> },
+  { 
+    path: '/events', 
+    element: <EventsPage /> 
+  },
+  { 
+    path: '/notifications', 
+    element: <NotificationsPage /> 
+  },
+  { 
+    path: '/register', 
+    element: <Register /> 
+  },
+  { 
+    path: '/alumni-profile', 
+    element: <AlumniProfilePage /> 
+  },
+  { 
+    path: '/my-applications', 
+    element: <MyApplications /> 
+  },
+  { 
+    path: '/profile', 
+    element: <ProfileRouter /> // 👈 Keeps this, removed the duplicate below
+  },
   {
     path: '/login',
     element: <Login />
@@ -75,6 +92,10 @@ export const router = createBrowserRouter([
     element: <AlumniProfile />
   },
   {
+    path: '/student/:id', // 👈 NEW: Added this route so Alumni can view Student Profiles
+    element: <StudentProfile /> 
+  },
+  {
     path: '/my-queries',
     element: <MyQueries />
   },
@@ -86,10 +107,10 @@ export const router = createBrowserRouter([
     path: '/career-management',
     element: <CareerPage />
   },
- {
-  path: '/job-postings',
-  element: <JobsRouter />
-},
+  {
+    path: '/job-postings',
+    element: <JobsRouter />
+  },
   {
     path: '/verify-alumni',
     element: <VerifyAlumni />

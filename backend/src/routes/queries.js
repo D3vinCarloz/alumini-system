@@ -1,143 +1,154 @@
 const router = require('express').Router();
 const db     = require('../config/db');
 const { authenticate, requireRole } = require('../middleware/auth');
-const { createNotification } = require('../config/notify');
 
-// GET /api/queries
+// 1. GET ALL CHATS FOR USER (Student/Alumni Messenger List)
 router.get('/', authenticate, async (req, res) => {
   try {
     const { subId, role } = req.user;
     const col = role === 'student' ? 'q.Student_ID' : 'q.Alumni_ID';
 
     const [rows] = await db.query(`
-      SELECT q.Query_ID, q.Content, q.Query_Date, q.Status,
-             s_user.Name  AS studentName, q.Student_ID,
-             a_user.Name  AS alumniName,  q.Alumni_ID
+      SELECT q.Query_ID, q.Status AS dbStatus,
+             COALESCE(lr.Latest_Content, q.Content) AS Content,
+             COALESCE(lr.Latest_Date, q.Query_Date) AS Query_Date,
+             lr.Latest_Sender_Role,
+             s_user.Name AS studentName, s_user.Profile_Pic AS studentProfilePic,
+             a_user.Name AS alumniName, a_user.Profile_Pic AS alumniProfilePic
       FROM   QUERY q
-      JOIN   STUDENT st    ON st.Student_ID = q.Student_ID
-      JOIN   USER s_user   ON s_user.User_ID = st.User_ID
-      JOIN   ALUMNI al     ON al.Alumni_ID   = q.Alumni_ID
-      JOIN   USER a_user   ON a_user.User_ID = al.User_ID
+      JOIN   STUDENT st   ON st.Student_ID = q.Student_ID
+      JOIN   USER s_user  ON s_user.User_ID = st.User_ID
+      JOIN   ALUMNI al    ON al.Alumni_ID   = q.Alumni_ID
+      JOIN   USER a_user  ON a_user.User_ID = al.User_ID
+      LEFT JOIN (
+          SELECT r1.Query_ID, r1.Content AS Latest_Content, r1.Reply_Date AS Latest_Date, u.role AS Latest_Sender_Role
+          FROM REPLY r1
+          JOIN USER u ON r1.User_ID = u.User_ID
+          INNER JOIN (
+              SELECT Query_ID, MAX(Reply_Date) AS MaxDate FROM REPLY GROUP BY Query_ID
+          ) r2 ON r1.Query_ID = r2.Query_ID AND r1.Reply_Date = r2.MaxDate
+      ) lr ON lr.Query_ID = q.Query_ID
       WHERE  ${col} = ?
-      ORDER  BY q.Query_Date DESC
+      ORDER  BY Query_Date DESC
     `, [subId]);
 
+    const formattedRows = rows.map(row => {
+      const isUnread = (role === 'student' && row.dbStatus === 'answered') || 
+                       (role === 'alumni' && row.dbStatus === 'pending');
+      return {
+        ...row,
+        isUnread,
+        Status: isUnread ? 'unread' : 'read', 
+        Profile_Pic: role === 'student' ? row.alumniProfilePic : row.studentProfilePic
+      };
+    });
+
+    res.json(formattedRows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// 2. GET ALL CHATS FOR ADMIN
+router.get('/admin/all', authenticate, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') return res.status(403).json({ message: 'Forbidden' });
+
+    const [rows] = await db.query(`
+      SELECT q.Query_ID, q.Content, q.Query_Date, q.Status,
+             s_u.Name AS studentName, s_u.Profile_Pic AS studentProfilePic,
+             a_u.Name AS alumniName, a_u.Profile_Pic AS alumniProfilePic
+      FROM   QUERY q
+      JOIN   STUDENT s ON s.Student_ID = q.Student_ID JOIN USER s_u ON s_u.User_ID = s.User_ID
+      JOIN   ALUMNI a  ON a.Alumni_ID = q.Alumni_ID   JOIN USER a_u ON a_u.User_ID = a.User_ID
+      ORDER  BY q.Query_Date DESC
+    `);
     res.json(rows);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-// POST /api/queries — student starts or continues a query thread
-router.post('/', authenticate, requireRole('student'), async (req, res) => {
-  try {
-    const { alumniId, content } = req.body;
-
-    if (!alumniId || !content)
-      return res.status(400).json({ message: 'alumniId and content are required' });
-
-    // Check if thread already exists between this student and alumni
-    const [[existing]] = await db.query(
-      'SELECT Query_ID FROM QUERY WHERE Student_ID = ? AND Alumni_ID = ?',
-      [req.user.subId, alumniId]
-    );
-
-    if (existing) {
-      // Thread exists — add message as a reply
-      await db.query(
-        'INSERT INTO REPLY (Query_ID, User_ID, Content) VALUES (?, ?, ?)',
-        [existing.Query_ID, req.user.id, content]
-      );
-
-      // Update status back to pending since student sent a new message
-      await db.query(
-        "UPDATE QUERY SET Status = 'pending' WHERE Query_ID = ?",
-        [existing.Query_ID]
-      );
-
-      // Notify alumni of new message
-      const [[alumni]] = await db.query(`
-        SELECT u.User_ID FROM ALUMNI a
-        JOIN USER u ON u.User_ID = a.User_ID
-        WHERE a.Alumni_ID = ?
-      `, [alumniId]);
-
-      if (alumni) {
-        await createNotification({
-          userId:  alumni.User_ID,
-          title:   'New Message',
-          message: `${req.user.name} sent a new message: "${content.substring(0, 80)}${content.length > 80 ? '...' : ''}"`,
-          type:    'reply',
-          link:    `/chat/${existing.Query_ID}`,
-        });
-      }
-
-      return res.status(200).json({ queryId: existing.Query_ID, existing: true });
-    }
-
-    // No thread yet — create new query
-    const [result] = await db.query(
-      'INSERT INTO QUERY (Student_ID, Alumni_ID, Content) VALUES (?, ?, ?)',
-      [req.user.subId, alumniId, content]
-    );
-
-    const queryId = result.insertId;
-
-    // Notify alumni of new query
-    const [[alumni]] = await db.query(`
-      SELECT u.User_ID, u.Name FROM ALUMNI a
-      JOIN USER u ON u.User_ID = a.User_ID
-      WHERE a.Alumni_ID = ?
-    `, [alumniId]);
-
-    if (alumni) {
-      await createNotification({
-        userId:  alumni.User_ID,
-        title:   'New Query Received',
-        message: `${req.user.name} sent you a query: "${content.substring(0, 80)}${content.length > 80 ? '...' : ''}"`,
-        type:    'query',
-        link:    `/chat/${queryId}`,
-      });
-    }
-
-    res.status(201).json({ queryId, existing: false });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// GET /api/queries/:queryId — full thread with all replies
+// 3. GET SINGLE CHAT (Admin Bypass + Auto-Clear Notifications)
 router.get('/:queryId', authenticate, async (req, res) => {
   try {
-    const [[query]] = await db.query(`
+    const { subId, role, id: userId } = req.user;
+    const { queryId } = req.params;
+    
+    let sql = `
       SELECT q.Query_ID, q.Content, q.Query_Date, q.Status,
-             s_user.Name AS studentName, q.Student_ID,
-             a_user.Name AS alumniName,  q.Alumni_ID
+             s_u.Name AS studentName, q.Student_ID,
+             a_u.Name AS alumniName, q.Alumni_ID
       FROM   QUERY q
-      JOIN   STUDENT st  ON st.Student_ID = q.Student_ID
-      JOIN   USER s_user ON s_user.User_ID = st.User_ID
-      JOIN   ALUMNI al   ON al.Alumni_ID   = q.Alumni_ID
-      JOIN   USER a_user ON a_user.User_ID = al.User_ID
+      JOIN   STUDENT s ON s.Student_ID = q.Student_ID JOIN USER s_u ON s_u.User_ID = s.User_ID
+      JOIN   ALUMNI a  ON a.Alumni_ID = q.Alumni_ID   JOIN USER a_u ON a_u.User_ID = a.User_ID
       WHERE  q.Query_ID = ?
-    `, [req.params.queryId]);
+    `;
+    const params = [queryId];
 
-    if (!query)
-      return res.status(404).json({ message: 'Query not found' });
+    if (role !== 'admin') {
+      sql += role === 'student' ? ' AND q.Student_ID = ?' : ' AND q.Alumni_ID = ?';
+      params.push(subId);
+    }
+
+    const [queryRows] = await db.query(sql, params);
+    if (queryRows.length === 0) return res.status(404).json({ message: 'Conversation not found' });
+
+    const queryData = queryRows[0];
+
+    if (role !== 'admin') {
+      if ((role === 'alumni' && queryData.Status === 'pending') || (role === 'student' && queryData.Status === 'answered')) {
+        await db.query("UPDATE QUERY SET Status = 'read' WHERE Query_ID = ?", [queryId]);
+      }
+      await db.query(`
+        UPDATE NOTIFICATIONS SET Is_Read = TRUE WHERE User_ID = ? AND Link LIKE ? AND Is_Read = FALSE
+      `, [userId, `%/${queryId}`]);
+    }
 
     const [replies] = await db.query(`
-      SELECT r.Reply_ID, r.User_ID, u.Name AS senderName,
-             r.Content, r.Reply_Date
+      SELECT r.Reply_ID, r.User_ID, u.Name AS senderName, u.Profile_Pic, r.Content, r.Reply_Date
       FROM   REPLY r
       JOIN   USER u ON u.User_ID = r.User_ID
       WHERE  r.Query_ID = ?
-      ORDER  BY r.Reply_Date
-    `, [req.params.queryId]);
+      ORDER  BY r.Reply_Date ASC
+    `, [queryId]);
 
-    res.json({ ...query, messages: replies });
+    res.json({ ...queryData, messages: replies });
   } catch (err) {
     console.error(err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// 4. POST NEW CHAT
+router.post('/', authenticate, requireRole('student'), async (req, res) => {
+  try {
+    const { alumniId, content } = req.body;
+    const studentId = req.user.subId;
+
+    if (!alumniId || !content) return res.status(400).json({ message: 'Missing fields' });
+
+    const [existing] = await db.query(
+      'SELECT Query_ID FROM QUERY WHERE Student_ID = ? AND Alumni_ID = ?',
+      [studentId, alumniId]
+    );
+
+    if (existing.length > 0) {
+      const qId = existing[0].Query_ID;
+      await db.query('INSERT INTO REPLY (Query_ID, User_ID, Content) VALUES (?, ?, ?)', [qId, req.user.id, content]);
+      await db.query("UPDATE QUERY SET Status = 'pending' WHERE Query_ID = ?", [qId]);
+      return res.status(200).json({ queryId: qId, existing: true });
+    }
+
+    const [result] = await db.query(
+      "INSERT INTO QUERY (Student_ID, Alumni_ID, Content, Status) VALUES (?, ?, ?, 'pending')",
+      [studentId, alumniId, content]
+    );
+
+    res.status(201).json({ queryId: result.insertId, existing: false });
+  } catch (err) {
+    console.error("Error in POST /queries:", err);
     res.status(500).json({ message: 'Server error' });
   }
 });

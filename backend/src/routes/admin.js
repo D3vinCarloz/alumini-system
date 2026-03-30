@@ -23,7 +23,8 @@ router.get('/stats', ...guard, async (_req, res) => {
 router.get('/users', ...guard, async (_req, res) => {
   try {
     const [rows] = await db.query(
-      'SELECT User_ID, Name, Email, Role, created_at FROM USER ORDER BY created_at DESC'
+      // 👈 ADDED Profile_Pic
+      'SELECT User_ID, Name, Email, Role, Profile_Pic, created_at FROM USER ORDER BY created_at DESC'
     );
     res.json(rows);
   } catch (err) {
@@ -37,8 +38,8 @@ router.get('/queries', ...guard, async (_req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT q.Query_ID, q.Status, q.Query_Date, q.Content,
-             s_user.Name AS studentName,
-             a_user.Name AS alumniName
+             s_user.Name AS studentName, s_user.Profile_Pic AS studentProfilePic, /* 👈 ADDED */
+             a_user.Name AS alumniName, a_user.Profile_Pic AS alumniProfilePic /* 👈 ADDED */
       FROM   QUERY q
       JOIN   STUDENT st  ON st.Student_ID = q.Student_ID
       JOIN   USER s_user ON s_user.User_ID = st.User_ID
@@ -57,7 +58,7 @@ router.get('/queries', ...guard, async (_req, res) => {
 router.get('/alumni', ...guard, async (_req, res) => {
   try {
     const [rows] = await db.query(`
-      SELECT a.Alumni_ID, u.Name, u.Email,
+      SELECT a.Alumni_ID, u.Name, u.Email, u.Profile_Pic, /* 👈 ADDED (Fixes Verify Alumni page!) */
              a.Department, a.Graduation_Year, a.Batch,
              a.Bio, a.Contact_Info,
              a.Verification_Status, a.Status

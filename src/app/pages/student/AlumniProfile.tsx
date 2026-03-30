@@ -2,20 +2,24 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
+import { Button } from '../../components/ui/button';
 import {
   Dialog, DialogContent, DialogHeader,
   DialogTitle, DialogDescription, DialogTrigger,
 } from '../../components/ui/dialog';
-import { GraduationCap, Briefcase, Mail, Phone, Send } from 'lucide-react';
+import { 
+  GraduationCap, Mail, Briefcase, 
+  MapPin, BookOpen, ExternalLink, MessageSquare, Send, ChevronUp, Phone // 👈 Phone imported here
+} from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import { toast } from 'sonner';
+import { UserAvatar } from '../../components/UserAvatar';
 
 interface CareerEntry {
   Career_ID: number;
   Company_Name: string;
-  Job_Role: string;
+  Job_Role: string; 
   Start_Year: number;
   End_Year: number | null;
 }
@@ -26,10 +30,12 @@ interface JobPosting {
   Company_Name: string;
   Description: string;
   Posting_Date: string;
+  Location?: string; 
 }
 
 interface Alumni {
   Alumni_ID: number;
+  User_ID: number; 
   Name: string;
   Email: string;
   Department: string;
@@ -37,31 +43,24 @@ interface Alumni {
   Batch: string;
   Contact_Info: string;
   Bio: string;
+  LinkedIn?: string; 
   Verification_Status: boolean;
+  Profile_Pic: string | null;
   careerHistory: CareerEntry[];
   jobPostings: JobPosting[];
-}
-
-interface Reply {
-  Reply_ID: number;
-  User_ID: number;
-  senderName: string;
-  Content: string;
-  Reply_Date: string;
 }
 
 export function AlumniProfile() {
   const { id }   = useParams();
   const navigate = useNavigate();
 
-  const [alumni, setAlumni]                     = useState<Alumni | null>(null);
-  const [loading, setLoading]                   = useState(true);
-  const [notFound, setNotFound]                 = useState(false);
-  const [queryText, setQueryText]               = useState('');
-  const [isDialogOpen, setIsDialogOpen]         = useState(false);
-  const [sending, setSending]                   = useState(false);
-  const [existingQueryId, setExistingQueryId]   = useState<number | null>(null);
-  const [existingMessages, setExistingMessages] = useState<Reply[]>([]);
+  const [alumni, setAlumni]                   = useState<Alumni | null>(null);
+  const [loading, setLoading]                 = useState(true);
+  const [notFound, setNotFound]               = useState(false);
+  const [queryText, setQueryText]             = useState('');
+  const [isDialogOpen, setIsDialogOpen]       = useState(false);
+  const [sending, setSending]                 = useState(false);
+  const [existingQueryId, setExistingQueryId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -75,40 +74,22 @@ export function AlumniProfile() {
       })
       .finally(() => setLoading(false));
 
-    // Check if existing thread with this alumni
+    // Check if conversation exists
     apiFetch<any[]>('/queries')
       .then(queries => {
         const existing = queries.find(q => q.Alumni_ID === parseInt(id!));
         if (existing) {
           setExistingQueryId(existing.Query_ID);
-          // Load full thread
-          apiFetch<any>(`/queries/${existing.Query_ID}`)
-            .then(thread => {
-              // First message is the initial query content stored in QUERY table
-              const firstMessage: Reply = {
-                Reply_ID:   0,
-                User_ID:    -1,
-                senderName: thread.studentName,
-                Content:    thread.Content,
-                Reply_Date: thread.Query_Date,
-              };
-              // Combine initial query + all replies into one list
-              setExistingMessages([firstMessage, ...(thread.messages || [])]);
-            })
-            .catch(console.error);
         }
       })
       .catch(console.error);
   }, [id]);
 
-  const handleSendQuery = async () => {
-    if (!queryText.trim()) {
-      toast.error('Please enter your query');
-      return;
-    }
+  const handleSendFirstMessage = async () => {
+    if (!queryText.trim()) return;
     setSending(true);
     try {
-      const data = await apiFetch<{ queryId: number; existing: boolean }>('/queries', {
+      const data = await apiFetch<{ queryId: number }>('/queries', {
         method: 'POST',
         body: JSON.stringify({
           alumniId: alumni?.Alumni_ID,
@@ -116,18 +97,13 @@ export function AlumniProfile() {
         }),
       });
 
-      if (data.existing) {
-        toast.success('Message added to your existing conversation!');
-      } else {
-        toast.success('Query sent successfully!');
-      }
-
+      toast.success('Conversation started!');
       setQueryText('');
       setIsDialogOpen(false);
-      setTimeout(() => navigate(`/chat/${data.queryId}`), 1000);
+      navigate(`/chat/${data.queryId}`);
     } catch (err) {
       console.error(err);
-      toast.error('Failed to send query. Please try again.');
+      toast.error('Failed to start conversation. Please try again.');
     } finally {
       setSending(false);
     }
@@ -136,11 +112,9 @@ export function AlumniProfile() {
   if (loading) {
     return (
       <DashboardLayout title="Alumni Profile">
-        <Card>
-          <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground">Loading profile...</p>
-          </CardContent>
-        </Card>
+        <div className="flex items-center justify-center h-[50vh]">
+          <p className="text-muted-foreground animate-pulse">Loading profile...</p>
+        </div>
       </DashboardLayout>
     );
   }
@@ -148,274 +122,233 @@ export function AlumniProfile() {
   if (notFound || !alumni) {
     return (
       <DashboardLayout title="Alumni Profile">
-        <Card>
-          <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground">Alumni not found.</p>
-          </CardContent>
-        </Card>
+        <div className="text-center py-12">
+          <p className="text-muted-foreground text-lg">Alumni not found.</p>
+          <Button variant="outline" className="mt-4" onClick={() => navigate(-1)}>Go Back</Button>
+        </div>
       </DashboardLayout>
     );
   }
 
+  const sortedCareerHistory = alumni.careerHistory 
+    ? [...alumni.careerHistory].sort((a, b) => b.Start_Year - a.Start_Year)
+    : [];
+
   return (
     <DashboardLayout title="Alumni Profile">
-      <div className="max-w-4xl space-y-6">
-
-        {/* Profile Header */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-start gap-6">
-              <div className="size-24 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <GraduationCap className="size-12 text-primary" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-start justify-between">
+      <div className="max-w-5xl mx-auto space-y-6">
+        
+        <Card className="border-none shadow-md bg-gradient-to-br from-primary/5 via-background to-background relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-2 bg-primary/20"></div>
+          <CardContent className="pt-8 sm:p-10">
+            <div className="flex flex-col sm:flex-row gap-6 sm:items-start">
+              <UserAvatar 
+                profilePic={alumni.Profile_Pic} 
+                name={alumni.Name} 
+                className="size-24 sm:size-32 text-3xl border-4 border-background shadow-sm shrink-0" 
+              />
+              <div className="flex-1 space-y-3 w-full">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
-                    <h2 className="text-2xl font-bold">{alumni.Name}</h2>
-                    <p className="text-muted-foreground mt-1">{alumni.Department}</p>
-                    <p className="text-sm text-muted-foreground">
-                      Class of {alumni.Graduation_Year}
-                      {alumni.Batch ? ` · Batch ${alumni.Batch}` : ''}
+                    <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-3">
+                      {alumni.Name}
+                      {alumni.Verification_Status && (
+                        <Badge variant="default" className="bg-emerald-500 hover:bg-emerald-600 text-xs">Verified</Badge>
+                      )}
+                    </h1>
+                    <p className="text-muted-foreground font-medium mt-1">
+                      {sortedCareerHistory?.[0]?.Job_Role 
+                        ? `${sortedCareerHistory[0].Job_Role} at ${sortedCareerHistory[0].Company_Name}` 
+                        : 'Alumni Member'}
                     </p>
                   </div>
-                  {alumni.Verification_Status && (
-                    <Badge variant="default" className="bg-green-600">Verified</Badge>
-                  )}
-                </div>
-                <p className="mt-4 text-foreground">{alumni.Bio}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+                  
+                  <div className="flex gap-3 shrink-0">
+                    {existingQueryId ? (
+                      <Button onClick={() => navigate(`/chat/${existingQueryId}`)} className="rounded-full px-6">
+                        <MessageSquare className="size-4 mr-2" /> Message
+                      </Button>
+                    ) : (
+                      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                        <DialogTrigger asChild>
+                          <Button className="rounded-full px-6">
+                            <MessageSquare className="size-4 mr-2" /> Message
+                          </Button>
+                        </DialogTrigger>
 
-        {/* Contact Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Contact Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center gap-3">
-              <Mail className="size-4 text-muted-foreground" />
-              <span>{alumni.Email}</span>
-            </div>
-            {alumni.Contact_Info && (
-              <div className="flex items-center gap-3">
-                <Phone className="size-4 text-muted-foreground" />
-                <span>{alumni.Contact_Info}</span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                        <DialogContent className="max-w-lg p-0 overflow-hidden rounded-2xl">
+                          <DialogHeader className="sr-only">
+                            <DialogTitle>Start conversation with {alumni.Name}</DialogTitle>
+                            <DialogDescription>Send your first message</DialogDescription>
+                          </DialogHeader>
 
-        {/* Career History */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Career History</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {alumni.careerHistory.length === 0 ? (
-              <p className="text-muted-foreground text-center py-4">
-                No career history available.
-              </p>
-            ) : (
-              <div className="space-y-4">
-                {alumni.careerHistory.map(career => (
-                  <div
-                    key={career.Career_ID}
-                    className="flex items-start gap-4 p-4 rounded-lg border border-border"
-                  >
-                    <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <Briefcase className="size-5 text-primary" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold">{career.Job_Role}</h4>
-                      <p className="text-sm text-muted-foreground">{career.Company_Name}</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {career.Start_Year} – {career.End_Year ?? 'Present'}
-                      </p>
-                    </div>
+                          <div className="bg-primary px-6 py-4 flex items-center gap-3 text-white">
+                            <UserAvatar profilePic={alumni.Profile_Pic} name={alumni.Name} className="size-10 border border-white/20" />
+                            <div>
+                                <h3 className="font-semibold leading-tight">{alumni.Name}</h3>
+                                <p className="text-white/70 text-xs">{alumni.Department}</p>
+                            </div>
+                          </div>
+
+                          <div className="p-6">
+                            <p className="text-sm text-muted-foreground mb-4">
+                              Send a message to start a conversation. You'll be notified when they reply.
+                            </p>
+                            
+                            <textarea
+                              placeholder="Type your message here..."
+                              value={queryText}
+                              onChange={e => setQueryText(e.target.value)}
+                              rows={4}
+                              className="w-full resize-none rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                            />
+
+                            <div className="flex justify-end mt-4">
+                              <Button 
+                                onClick={handleSendFirstMessage} 
+                                disabled={sending || !queryText.trim()}
+                                className="w-full sm:w-auto px-8 rounded-full"
+                              >
+                                {sending ? 'Sending...' : 'Send Message'}
+                                <Send className="size-4 ml-2" />
+                              </Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    )}
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Job Postings */}
-        {alumni.jobPostings.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Job Postings</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {alumni.jobPostings.map(job => (
-                <div key={job.Job_ID} className="p-4 rounded-lg border border-border">
-                  <h4 className="font-semibold">{job.Job_Title}</h4>
-                  <p className="text-sm text-muted-foreground mt-1">{job.Company_Name}</p>
-                  <p className="text-sm mt-2">{job.Description}</p>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Posted on {new Date(job.Posting_Date).toLocaleDateString()}
+                </div>
+                
+                {alumni.Bio && (
+                  <p className="text-sm leading-relaxed text-foreground/80 max-w-3xl mt-4 bg-muted/30 p-4 rounded-lg border border-border/50 italic">
+                    "{alumni.Bio}"
                   </p>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Send Query Dialog */}
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger className="w-full">
-            <div className="w-full flex items-center justify-center gap-2 h-11 px-8 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors cursor-pointer">
-              <Send className="size-4" />
-              {existingQueryId ? 'Continue Conversation' : 'Send Query'}
-            </div>
-          </DialogTrigger>
-
-          <DialogContent className="max-w-lg p-0 overflow-hidden">
-
-            {/* Hidden accessibility */}
-            <DialogHeader className="sr-only">
-              <DialogTitle>
-                {existingQueryId
-                  ? `Continue conversation with ${alumni.Name}`
-                  : `Send Query to ${alumni.Name}`}
-              </DialogTitle>
-              <DialogDescription>
-                Type your message to send to {alumni.Name}
-              </DialogDescription>
-            </DialogHeader>
-
-            {/* Coloured header */}
-            <div className="bg-primary px-6 py-4">
-              <div className="flex items-center gap-3">
-                <div className="size-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-                  <span className="text-white text-sm font-bold">
-                    {alumni.Name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
-                  </span>
-                </div>
-                <div>
-                  <h3 className="text-white font-semibold">{alumni.Name}</h3>
-                  <p className="text-white/70 text-xs">
-                    {alumni.Department || 'Alumni'}
-                    {alumni.Graduation_Year ? ` · Class of ${alumni.Graduation_Year}` : ''}
-                  </p>
-                </div>
-                {existingQueryId && (
-                  <span className="ml-auto text-[10px] bg-white/20 text-white px-2 py-0.5 rounded-full shrink-0">
-                    Existing conversation
-                  </span>
                 )}
               </div>
             </div>
+          </CardContent>
+        </Card>
 
-            {/* Chat preview area */}
-            <div className="bg-muted/30 px-6 py-4 min-h-[160px] max-h-[220px] overflow-y-auto flex flex-col justify-end space-y-3">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            
+            {/* CAREER HISTORY TIMELINE */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Briefcase className="size-5 text-primary" /> Career History
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {sortedCareerHistory.length > 0 ? (
+                  <div className="relative ml-2">
+                    
+                    <div className="absolute top-2 bottom-2 left-[11px] w-[2px] bg-border z-0"></div>
 
-              {existingQueryId && existingMessages.length > 0 ? (
-                <>
-                  <div className="flex justify-center mb-1">
-                    <span className="text-xs text-muted-foreground bg-muted px-3 py-1 rounded-full">
-                      Previous messages
-                    </span>
-                  </div>
-                  {existingMessages.slice(-2).map((msg: Reply) => {
-                    const isMe = msg.senderName !== alumni.Name;
-                    return (
-                      <div
-                        key={msg.Reply_ID}
-                        className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}
-                      >
-                        <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-xs ${
-                          isMe
-                            ? 'bg-primary text-primary-foreground rounded-br-sm'
-                            : 'bg-muted text-foreground rounded-bl-sm'
-                        }`}>
-                          <p>{msg.Content}</p>
-                          <p className={`text-[9px] mt-0.5 ${
-                            isMe
-                              ? 'text-primary-foreground/60 text-right'
-                              : 'text-muted-foreground'
-                          }`}>
-                            {msg.senderName}
-                          </p>
+                    <div className="space-y-8 relative z-10 pt-1">
+                      {sortedCareerHistory.map((career, index) => (
+                        <div key={career.Career_ID} className="relative pl-10 group">
+                          
+                          <div className="absolute left-0 top-1 size-6 bg-background border-2 border-primary rounded-full flex items-center justify-center shadow-sm">
+                            <div className="size-2 bg-primary rounded-full" />
+                          </div>
+
+                          {index !== sortedCareerHistory.length - 1 && (
+                            <div className="absolute left-[12px] top-[50px] -translate-x-1/2 text-muted-foreground/40 bg-background py-1 z-10">
+                              <ChevronUp className="size-5" />
+                            </div>
+                          )}
+
+                          <div>
+                            <h4 className="font-semibold text-base text-foreground">{career.Job_Role}</h4>
+                            <p className="text-sm font-medium text-primary mt-0.5">{career.Company_Name}</p>
+                            <p className="text-xs text-muted-foreground mt-2">
+                              <span className="bg-muted px-2 py-1 rounded-md font-medium text-foreground/70 border border-border/50">
+                                {career.Start_Year} — {career.End_Year || 'Present'}
+                              </span>
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </>
-              ) : (
-                <div className="flex justify-center">
-                  <span className="text-xs text-muted-foreground bg-muted px-3 py-1 rounded-full">
-                    {existingQueryId
-                      ? 'Continue your conversation'
-                      : `Start a conversation with ${alumni.Name.split(' ')[0]}`}
-                  </span>
-                </div>
-              )}
-
-              {/* Live preview of typed message */}
-              {queryText.trim() && (
-                <div className="flex justify-end">
-                  <div className="max-w-[80%] bg-primary text-primary-foreground rounded-2xl rounded-br-sm px-4 py-2.5 shadow-sm">
-                    <p className="text-sm leading-relaxed">{queryText}</p>
-                    <p className="text-[10px] text-primary-foreground/60 mt-1 text-right">
-                      You · now
-                    </p>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-
-            {/* Tips — only for new conversations */}
-            {!queryText.trim() && !existingQueryId && (
-              <div className="px-6 py-2 border-t border-border bg-background">
-                <p className="text-xs text-muted-foreground">
-                  💡 <span className="font-medium">Tips:</span> Ask about career advice, interview tips, or opportunities at their company.
-                </p>
-              </div>
-            )}
-
-            {/* Input area */}
-            <div className="px-4 py-4 border-t border-border bg-background">
-              <div className="flex items-end gap-2">
-                <div className="flex-1">
-                  <textarea
-                    placeholder={
-                      existingQueryId
-                        ? 'Type your message...'
-                        : 'Type your question here...'
-                    }
-                    value={queryText}
-                    onChange={e => setQueryText(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSendQuery();
-                      }
-                    }}
-                    rows={3}
-                    className="w-full resize-none rounded-2xl border border-border bg-muted/50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all placeholder:text-muted-foreground"
-                  />
-                  <p className="text-[10px] text-muted-foreground mt-1 text-right pr-1">
-                    Enter to send · Shift+Enter for new line
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4 bg-muted/20 rounded-lg">
+                    No career history provided.
                   </p>
+                )}
+              </CardContent>
+            </Card>
+
+            {alumni.jobPostings?.length > 0 && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                            <MapPin className="size-5 text-primary" /> Opportunities Posted
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid gap-4">
+                        {alumni.jobPostings.map(job => (
+                            <div key={job.Job_ID} className="p-4 rounded-xl border bg-card hover:shadow-md transition-all border-border/60">
+                                <h4 className="font-bold text-primary">{job.Job_Title}</h4>
+                                <p className="text-sm font-semibold">{job.Company_Name}</p>
+                                <p className="text-xs text-muted-foreground mt-2 line-clamp-3">{job.Description}</p>
+                            </div>
+                        ))}
+                    </CardContent>
+                </Card>
+            )}
+          </div>
+
+          <div className="space-y-6">
+            <Card>
+              <CardHeader><CardTitle className="text-base">Details</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-3">
+                    <BookOpen className="size-4 text-primary" />
+                    <div><p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">Department</p><p className="text-sm font-medium">{alumni.Department}</p></div>
                 </div>
-                <Button
-                  onClick={handleSendQuery}
-                  disabled={sending || !queryText.trim()}
-                  size="icon"
-                  className="size-11 rounded-full shrink-0 mb-5"
-                >
-                  {sending
-                    ? <span className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    : <Send className="size-4" />}
-                </Button>
-              </div>
-            </div>
+                <div className="flex items-center gap-3">
+                    <GraduationCap className="size-4 text-primary" />
+                    <div><p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">Class Of</p><p className="text-sm font-medium">{alumni.Graduation_Year}</p></div>
+                </div>
+              </CardContent>
+            </Card>
 
-          </DialogContent>
-        </Dialog>
+            {/* 👈 UPDATED CONNECT CARD HERE */}
+            <Card>
+                <CardHeader><CardTitle className="text-base">Connect</CardTitle></CardHeader>
+                <CardContent className="space-y-3">
+                    {/* Email Block */}
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/40 overflow-hidden">
+                        <Mail className="size-4 text-muted-foreground shrink-0" />
+                        <span className="text-sm truncate font-medium">{alumni.Email}</span>
+                    </div>
 
+                    {/* Phone Block */}
+                    {alumni.Contact_Info && alumni.Contact_Info.trim() !== '' && (
+                        <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/40 overflow-hidden">
+                            <Phone className="size-4 text-muted-foreground shrink-0" />
+                            <span className="text-sm truncate font-medium">{alumni.Contact_Info}</span>
+                        </div>
+                    )}
+
+                    {/* LinkedIn Block */}
+                    {alumni.LinkedIn && alumni.LinkedIn.trim() !== '' && (
+                        <a 
+                            href={alumni.LinkedIn.startsWith('http') ? alumni.LinkedIn : `https://${alumni.LinkedIn}`} 
+                            target="_blank" rel="noreferrer"
+                            className="flex items-center gap-3 p-3 rounded-lg bg-[#0077b5]/10 text-[#0077b5] border border-[#0077b5]/20 hover:bg-[#0077b5]/30 transition-colors"
+                        >
+                            <ExternalLink className="size-4 shrink-0" />
+                            <span className="text-sm font-semibold">LinkedIn Profile</span>
+                        </a>
+                    )}
+                </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
     </DashboardLayout>
   );

@@ -10,11 +10,13 @@ import {
 import { User, Mail, Calendar, Shield, GraduationCap, Hash, BookOpen } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import { toast } from 'sonner';
+import { UserAvatar } from '../../components/UserAvatar'; // 👈 IMPORT ADDED
 
 interface User {
   User_ID: number;
   Name: string;
   Email: string;
+  Profile_Pic?: string | null; // 👈 ADDED
   Role: 'student' | 'alumni' | 'admin';
   created_at: string;
 }
@@ -126,7 +128,17 @@ export function UsersPage() {
                       className="border-b border-border hover:bg-secondary/50 cursor-pointer transition-colors"
                       onClick={() => handleRowClick(user)}
                     >
-                      <td className="py-4 px-4 font-medium">{user.Name}</td>
+                      {/* 👈 UPDATED AVATAR CELL */}
+                      <td className="py-4 px-4">
+                        <div className="flex items-center gap-3">
+                          <UserAvatar 
+                            profilePic={user.Profile_Pic} 
+                            name={user.Name} 
+                            className="size-8 text-xs" 
+                          />
+                          <span className="font-medium">{user.Name}</span>
+                        </div>
+                      </td>
                       <td className="py-4 px-4 text-muted-foreground">{user.Email}</td>
                       <td className="py-4 px-4">
                         <Badge variant={getRoleBadgeVariant(user.Role)}>
@@ -151,23 +163,23 @@ export function UsersPage() {
         onOpenChange={open => { if (!open) setSelectedUser(null); }}
       >
         <DialogContent className="max-w-md">
-<DialogHeader>
-  <DialogTitle>User Details</DialogTitle>
-  <DialogDescription>
-    Complete profile information for this user
-  </DialogDescription>
-</DialogHeader>
+          <DialogHeader>
+            <DialogTitle>User Details</DialogTitle>
+            <DialogDescription>
+              Complete profile information for this user
+            </DialogDescription>
+          </DialogHeader>
 
           {selectedUser && (
             <div className="space-y-4 mt-2">
 
-              {/* Role banner */}
+              {/* 👈 Role banner UPDATED WITH AVATAR */}
               <div className={`flex items-center gap-3 p-3 rounded-xl border ${roleColors[selectedUser.Role]}`}>
-                <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <span className="text-primary font-bold text-sm">
-                    {selectedUser.Name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                  </span>
-                </div>
+                <UserAvatar 
+                  profilePic={selectedUser.Profile_Pic} 
+                  name={selectedUser.Name} 
+                  className="size-12 text-sm" 
+                />
                 <div>
                   <p className="font-semibold">{selectedUser.Name}</p>
                   <Badge variant={getRoleBadgeVariant(selectedUser.Role)} className="mt-1">

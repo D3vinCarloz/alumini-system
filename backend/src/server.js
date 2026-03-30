@@ -8,7 +8,7 @@ const app = express();
 app.use(cors({ origin: 'http://localhost:5173' }));
 app.use(express.json());
 
-// Serve uploaded resumes
+// Serve uploaded resumes and profile pictures
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Routes
@@ -23,6 +23,7 @@ app.use('/api/student',       require('./routes/student'));
 app.use('/api/applications',  require('./routes/applications'));
 app.use('/api/events',        require('./routes/events'));
 app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/profile-pic',   require('./routes/profile-pic')); // Added profile-pic route
 
 // Global error handler
 app.use((err, _req, res, _next) => {

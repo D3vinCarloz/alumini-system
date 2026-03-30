@@ -10,11 +10,14 @@ import {
 import { Eye } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import { toast } from 'sonner';
+import { UserAvatar } from '../../components/UserAvatar'; // 👈 IMPORT ADDED
 
 interface Query {
   Query_ID: number;
   studentName: string;
+  studentProfilePic?: string | null; // 👈 ADDED
   alumniName: string;
+  alumniProfilePic?: string | null;  // 👈 ADDED
   Content: string;
   Status: 'pending' | 'answered';
   Query_Date: string;
@@ -106,8 +109,30 @@ export function QueryMonitor() {
                       key={query.Query_ID}
                       className="border-b border-border hover:bg-secondary/50"
                     >
-                      <td className="py-4 px-4 font-medium">{query.studentName}</td>
-                      <td className="py-4 px-4 font-medium">{query.alumniName}</td>
+                      {/* 👈 UPDATED STUDENT AVATAR */}
+                      <td className="py-4 px-4">
+                        <div className="flex items-center gap-3">
+                          <UserAvatar 
+                            profilePic={query.studentProfilePic} 
+                            name={query.studentName} 
+                            className="size-8 text-xs" 
+                          />
+                          <span className="font-medium">{query.studentName}</span>
+                        </div>
+                      </td>
+
+                      {/* 👈 UPDATED ALUMNI AVATAR */}
+                      <td className="py-4 px-4">
+                        <div className="flex items-center gap-3">
+                          <UserAvatar 
+                            profilePic={query.alumniProfilePic} 
+                            name={query.alumniName} 
+                            className="size-8 text-xs" 
+                          />
+                          <span className="font-medium">{query.alumniName}</span>
+                        </div>
+                      </td>
+
                       <td className="py-4 px-4 max-w-md">
                         <p className="truncate text-muted-foreground">{query.Content}</p>
                       </td>

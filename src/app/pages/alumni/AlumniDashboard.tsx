@@ -1,19 +1,23 @@
 import { useEffect, useState } from 'react';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { MessageSquare, Briefcase, Clock } from 'lucide-react';
+import { MessageSquare, Briefcase, Clock, MessageCircle, CheckCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Badge } from '../../components/ui/badge';
 import { Link } from 'react-router';
 import { apiFetch } from '../../lib/api';
 import { toast } from 'sonner';
+import { UserAvatar } from '../../components/UserAvatar';
 
 interface Query {
   Query_ID: number;
   studentName: string;
+  Profile_Pic?: string | null;
   alumniName: string;
   Content: string;
-  Status: 'pending' | 'answered';
+  Status: string;
+  isUnread: boolean;
+  Latest_Sender_Role: 'student' | 'alumni' | null;
   Query_Date: string;
 }
 
@@ -36,7 +40,6 @@ export function AlumniDashboard() {
           apiFetch<Job[]>('/jobs'),
         ]);
         setReceivedQueries(queriesData);
-        // Count only jobs posted by this alumni
         setJobsPosted(jobsData.filter(j => j.Alumni_ID === user?.subId).length);
       } catch (err) {
         console.error('Failed to load dashboard data:', err);
@@ -50,44 +53,57 @@ export function AlumniDashboard() {
   }, [user?.subId]);
 
   const totalQueries   = receivedQueries.length;
-  const pendingQueries = receivedQueries.filter(q => q.Status === 'pending').length;
+  // Pending if the student sent the last message (or if it's unread)
+  const pendingQueries = receivedQueries.filter(q => q.Latest_Sender_Role === 'student' || !q.Latest_Sender_Role).length;
 
   return (
     <DashboardLayout title="Alumni Dashboard">
       <div className="space-y-6">
 
-        {/* Stats Cards */}
+        {/* 👈 UPDATED: Stats Cards are now Clickable Links */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Total Queries Received</CardTitle>
-              <MessageSquare className="size-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-primary">
-                {loading ? '—' : totalQueries}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">Questions from students</p>
-              {!loading && pendingQueries > 0 && (
-                <p className="text-xs text-amber-600 mt-1">
-                  {pendingQueries} awaiting your reply
-                </p>
-              )}
-            </CardContent>
-          </Card>
+          
+          {/* Link to Query Management (Update the 'to' path if your route is named differently, like '/my-queries') */}
+          <Link to="/query-management" className="block outline-none">
+            <Card className="h-full relative overflow-hidden transition-all hover:shadow-md hover:-translate-y-0.5 cursor-pointer border-border/60 hover:border-border">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Total Queries Received</CardTitle>
+                <div className="rounded-lg p-1.5 bg-muted/50 text-muted-foreground">
+                  <MessageSquare className="size-4" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold tracking-tight text-primary">
+                  {loading ? '—' : totalQueries}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Questions from students</p>
+                {!loading && pendingQueries > 0 && (
+                  <p className="text-xs text-amber-600 mt-2 font-medium flex items-center gap-1">
+                    <Clock className="size-3" /> {pendingQueries} awaiting your reply
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </Link>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Jobs Posted</CardTitle>
-              <Briefcase className="size-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-green-600">
-                {loading ? '—' : jobsPosted}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">Active job postings</p>
-            </CardContent>
-          </Card>
+          {/* Link to Job Postings */}
+          <Link to="/job-postings" className="block outline-none">
+            <Card className="h-full relative overflow-hidden transition-all hover:shadow-md hover:-translate-y-0.5 cursor-pointer border-border/60 hover:border-border">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Jobs Posted</CardTitle>
+                <div className="rounded-lg p-1.5 bg-muted/50 text-muted-foreground">
+                  <Briefcase className="size-4" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold tracking-tight text-emerald-600">
+                  {loading ? '—' : jobsPosted}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Active job postings</p>
+              </CardContent>
+            </Card>
+          </Link>
+
         </div>
 
         {/* Recent Queries */}
@@ -104,31 +120,49 @@ export function AlumniDashboard() {
                   No queries received yet.
                 </p>
               ) : (
-                receivedQueries.map((query) => (
-                  <Link
-                    key={query.Query_ID}
-                    to={`/chat/${query.Query_ID}`}
-                    className="flex items-center justify-between p-4 rounded-lg border border-border hover:bg-secondary transition-colors"
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3">
-                        <p className="font-medium">{query.studentName}</p>
-                        <Badge variant={query.Status === 'answered' ? 'default' : 'secondary'}>
-                          {query.Status}
-                        </Badge>
+                receivedQueries.map((query) => {
+                  const isWaitingForYou = query.Latest_Sender_Role === 'student' || !query.Latest_Sender_Role;
+
+                  return (
+                    <Link
+                      key={query.Query_ID}
+                      to={`/chat/${query.Query_ID}`}
+                      className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${
+                        query.isUnread ? 'border-primary/50 bg-primary/5 hover:bg-primary/10' : 'border-border hover:bg-muted/50'
+                      }`}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3">
+                          <UserAvatar 
+                            profilePic={query.Profile_Pic} 
+                            name={query.studentName} 
+                            className="size-10 text-sm" 
+                          />
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-2">
+                              <p className="font-semibold text-foreground">{query.studentName}</p>
+                              <Badge variant={query.isUnread ? 'default' : 'secondary'} className="text-[10px] h-5 px-1.5">
+                                {query.isUnread ? (
+                                  <span className="flex items-center gap-1"><MessageCircle className="size-2" />New</span>
+                                ) : isWaitingForYou ? (
+                                  <span className="flex items-center gap-1 text-amber-600"><Clock className="size-2" />Needs Reply</span>
+                                ) : (
+                                  <span className="flex items-center gap-1 text-emerald-600"><CheckCircle className="size-2" />Replied</span>
+                                )}
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {new Date(query.Query_Date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </p>
+                          </div>
+                        </div>
+                        <p className={`text-sm mt-3 ml-[52px] truncate ${query.isUnread ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+                          {query.Content}
+                        </p>
                       </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {query.Content.substring(0, 100)}...
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        {new Date(query.Query_Date).toLocaleDateString()}
-                      </p>
-                    </div>
-                    {query.Status === 'pending' && (
-                      <Clock className="size-5 text-amber-600 shrink-0 ml-4" />
-                    )}
-                  </Link>
-                ))
+                    </Link>
+                  );
+                })
               )}
             </div>
           </CardContent>

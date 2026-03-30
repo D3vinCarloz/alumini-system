@@ -8,11 +8,13 @@ import { Search, GraduationCap, MapPin, Calendar } from 'lucide-react';
 import { Link } from 'react-router';
 import { apiFetch } from '../../lib/api';
 import { toast } from 'sonner';
+import { UserAvatar } from '../../components/UserAvatar'; // 👈 IMPORT ADDED
 
 interface Alumni {
   Alumni_ID: number;
   Name: string;
   Email: string;
+  Profile_Pic?: string | null; // 👈 ADDED
   Department: string;
   Graduation_Year: number;
   Batch: string;
@@ -160,9 +162,14 @@ export function SearchAlumni() {
               <Card key={alumni.Alumni_ID} className="hover:shadow-lg transition-shadow">
                 <CardContent className="pt-6">
                   <div className="flex items-start gap-4">
-                    <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <GraduationCap className="size-6 text-primary" />
-                    </div>
+                    
+                    {/* 👈 UPDATED AVATAR HERE */}
+                    <UserAvatar 
+                      profilePic={alumni.Profile_Pic} 
+                      name={alumni.Name} 
+                      className="size-12 text-sm" 
+                    />
+
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold truncate">{alumni.Name}</h3>
                       <div className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">

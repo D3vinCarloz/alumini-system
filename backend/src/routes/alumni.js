@@ -6,7 +6,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
 router.get('/', authenticate, async (req, res) => {
   try {
     const [rows] = await db.query(`
-      SELECT a.Alumni_ID, u.User_ID, u.Name, u.Email,
+      SELECT a.Alumni_ID, u.User_ID, u.Name, u.Email, u.Profile_Pic, u.LinkedIn,
              a.Department, a.Graduation_Year, a.Batch,
              a.Contact_Info, a.Bio, a.Verification_Status
       FROM   ALUMNI a
@@ -19,13 +19,15 @@ router.get('/', authenticate, async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
 // GET /api/alumni/my-profile — alumni gets own profile
 router.get('/my-profile', authenticate, requireRole('alumni'), async (req, res) => {
   try {
     const [[alumni]] = await db.query(`
-      SELECT u.User_ID, u.Name, u.Email,
+      SELECT u.User_ID, u.Name, u.Email, u.Profile_Pic, u.DOB, u.Gender, u.LinkedIn,
              a.Alumni_ID, a.Department, a.Graduation_Year,
-             a.Batch, a.Contact_Info, a.Bio, a.Verification_Status, a.Status
+             a.Batch, a.Contact_Info, a.Bio, 
+             a.Verification_Status, a.Status
       FROM   USER u
       JOIN   ALUMNI a ON a.User_ID = u.User_ID
       WHERE  u.User_ID = ?
@@ -42,11 +44,11 @@ router.get('/my-profile', authenticate, requireRole('alumni'), async (req, res) 
 // PUT /api/alumni/my-profile — alumni updates own profile
 router.put('/my-profile', authenticate, requireRole('alumni'), async (req, res) => {
   try {
-    const { name, department, graduationYear, batch, contactInfo, bio } = req.body;
+    const { name, department, graduationYear, batch, contactInfo, bio, dob, gender, linkedin } = req.body;
 
     await db.query(
-      'UPDATE USER SET Name = ? WHERE User_ID = ?',
-      [name, req.user.id]
+      'UPDATE USER SET Name = ?, DOB = ?, Gender = ?, LinkedIn = ? WHERE User_ID = ?',
+      [name, dob || null, gender || null, linkedin || null, req.user.id]
     );
 
     await db.query(`
@@ -66,27 +68,24 @@ router.put('/my-profile', authenticate, requireRole('alumni'), async (req, res) 
 // GET /api/alumni/:alumniId — single alumni with career + jobs
 router.get('/:alumniId', authenticate, async (req, res) => {
   try {
-    const { alumniId } = req.params;
-
     const [[alumni]] = await db.query(`
-      SELECT a.Alumni_ID, u.User_ID, u.Name, u.Email,
+      SELECT a.Alumni_ID, u.User_ID, u.Name, u.Email, u.Profile_Pic, u.LinkedIn,
              a.Department, a.Graduation_Year, a.Batch,
              a.Contact_Info, a.Bio, a.Verification_Status
       FROM   ALUMNI a
       JOIN   USER u ON u.User_ID = a.User_ID
       WHERE  a.Alumni_ID = ?
-    `, [alumniId]);
+    `, [req.params.alumniId]);
 
-    if (!alumni)
-      return res.status(404).json({ message: 'Alumni not found' });
+    if (!alumni) return res.status(404).json({ message: 'Alumni not found' });
 
     const [career] = await db.query(
       'SELECT * FROM CAREER_HISTORY WHERE Alumni_ID = ? ORDER BY Start_Year DESC',
-      [alumniId]
+      [req.params.alumniId]
     );
     const [jobs] = await db.query(
       'SELECT * FROM JOB_POSTINGS WHERE Alumni_ID = ? ORDER BY Posting_Date DESC',
-      [alumniId]
+      [req.params.alumniId]
     );
 
     res.json({ ...alumni, careerHistory: career, jobPostings: jobs });
@@ -96,7 +95,6 @@ router.get('/:alumniId', authenticate, async (req, res) => {
   }
 });
 
-// PATCH /api/alumni/:alumniId/verify — admin marks an alumni as verified
 // PATCH /api/alumni/:alumniId/verify — admin verifies
 router.patch('/:alumniId/verify', authenticate, requireRole('admin'), async (req, res) => {
   try {
@@ -110,6 +108,7 @@ router.patch('/:alumniId/verify', authenticate, requireRole('admin'), async (req
     res.status(500).json({ message: 'Server error' });
   }
 });
+
 // PATCH /api/alumni/:alumniId/reject — admin rejects
 router.patch('/:alumniId/reject', authenticate, requireRole('admin'), async (req, res) => {
   try {

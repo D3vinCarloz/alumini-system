@@ -8,11 +8,13 @@ import { toast } from 'sonner';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle
 } from '../../components/ui/dialog';
+import { UserAvatar } from '../../components/UserAvatar';
 
 interface Alumni {
   Alumni_ID: number;
   Name: string;
   Email: string;
+  Profile_Pic?: string | null;
   Department: string;
   Graduation_Year: number;
   Batch: string;
@@ -122,8 +124,7 @@ export function VerifyAlumni() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-border">
-                    <th className="text-left py-3 px-4 font-medium">Name</th>
-                    <th className="text-left py-3 px-4 font-medium">Email</th>
+                    <th className="text-left py-3 px-4 font-medium">Alumni</th>
                     <th className="text-left py-3 px-4 font-medium">Department</th>
                     <th className="text-left py-3 px-4 font-medium">Batch</th>
                     <th className="text-left py-3 px-4 font-medium">Status</th>
@@ -148,12 +149,20 @@ export function VerifyAlumni() {
                     alumniList.map(alumni => {
                       const cfg = statusConfig[alumni.Status];
                       return (
-                        <tr
-                          key={alumni.Alumni_ID}
-                          className="border-b border-border hover:bg-secondary/50"
-                        >
-                          <td className="py-4 px-4 font-medium">{alumni.Name}</td>
-                          <td className="py-4 px-4 text-muted-foreground text-sm">{alumni.Email}</td>
+                        <tr key={alumni.Alumni_ID} className="border-b border-border hover:bg-secondary/50">
+                          <td className="py-4 px-4">
+                            <div className="flex items-center gap-3">
+                              <UserAvatar 
+                                profilePic={alumni.Profile_Pic} 
+                                name={alumni.Name} 
+                                className="size-9 text-xs" 
+                              />
+                              <div>
+                                <p className="font-medium">{alumni.Name}</p>
+                                <p className="text-xs text-muted-foreground">{alumni.Email}</p>
+                              </div>
+                            </div>
+                          </td>
                           <td className="py-4 px-4">{alumni.Department || '—'}</td>
                           <td className="py-4 px-4">{alumni.Batch || '—'}</td>
                           <td className="py-4 px-4">
@@ -161,8 +170,6 @@ export function VerifyAlumni() {
                               {cfg.label}
                             </span>
                           </td>
-
-                          {/* View details */}
                           <td className="py-4 px-4">
                             <Button
                               variant="ghost"
@@ -174,8 +181,6 @@ export function VerifyAlumni() {
                               View
                             </Button>
                           </td>
-
-                          {/* Actions */}
                           <td className="py-4 px-4">
                             <div className="flex gap-2">
                               {alumni.Status !== 'verified' && (
@@ -227,13 +232,10 @@ export function VerifyAlumni() {
             </DialogHeader>
             {selectedAlumni && (
               <div className="space-y-4 mt-2">
-
-                {/* Status badge */}
                 <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusConfig[selectedAlumni.Status].class}`}>
                   {statusConfig[selectedAlumni.Status].label}
                 </span>
 
-                {/* Info grid */}
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
                     <p className="text-xs text-muted-foreground">Name</p>
@@ -261,7 +263,6 @@ export function VerifyAlumni() {
                   </div>
                 </div>
 
-                {/* Bio */}
                 {selectedAlumni.Bio && (
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Bio</p>
@@ -269,7 +270,6 @@ export function VerifyAlumni() {
                   </div>
                 )}
 
-                {/* Action buttons in dialog */}
                 <div className="flex gap-3 pt-2">
                   {selectedAlumni.Status !== 'verified' && (
                     <Button

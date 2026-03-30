@@ -7,17 +7,21 @@ import { Link } from 'react-router';
 import { useAuth } from '../../context/AuthContext';
 import { apiFetch } from '../../lib/api';
 import { toast } from 'sonner';
+import { UserAvatar } from '../../components/UserAvatar';
 import {
   MessageSquare, CheckCircle, Clock, Users, Briefcase,
   CalendarDays, ArrowRight, UserPlus, Search, Bell,
-  ChevronRight, MapPin, Building2, GraduationCap, TrendingUp,
+  ChevronRight, MapPin, Building2, GraduationCap, TrendingUp, MessageCircle
 } from 'lucide-react';
 
 interface Query {
   Query_ID: number;
   alumniName: string;
+  Profile_Pic?: string | null;
   Content: string;
-  Status: 'pending' | 'answered';
+  Status: string;
+  isUnread: boolean;
+  Latest_Sender_Role: 'student' | 'alumni' | null;
   Query_Date: string;
 }
 
@@ -31,6 +35,7 @@ interface Job {
 interface Alumni {
   Alumni_ID: number;
   Name: string;
+  Profile_Pic?: string | null;
   Department: string;
   Graduation_Year: number;
   Verification_Status: boolean;
@@ -57,14 +62,6 @@ const typeColors: Record<string, string> = {
   Other:      'bg-gray-100 text-gray-700',
 };
 
-const avatarColors = [
-  'bg-blue-100 text-blue-700',
-  'bg-emerald-100 text-emerald-700',
-  'bg-amber-100 text-amber-700',
-  'bg-purple-100 text-purple-700',
-];
-
-// ─── Stat Card ────────────────────────────────────────────────────────────────
 function StatCard({
   label, value, sub, icon: Icon,
   valueClass = 'text-foreground',
@@ -99,11 +96,10 @@ function StatCard({
   return content;
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
 export function StudentDashboard() {
   const { user } = useAuth();
 
-  const [userQueries,     setUserQueries]    = useState<Query[]>([]);
+  const [userQueries,    setUserQueries]    = useState<Query[]>([]);
   const [recentJobs,      setRecentJobs]     = useState<Job[]>([]);
   const [suggestedAlumni, setSuggestedAlumni] = useState<Alumni[]>([]);
   const [upcomingEvents,  setUpcomingEvents]  = useState<Event[]>([]);
@@ -154,9 +150,10 @@ export function StudentDashboard() {
       .catch(console.error);
   }, []);
 
-  // ── Derived values ──────────────────────────────────────────────────────────
+  // 👈 REAL STATS LOGIC
   const totalQueries    = userQueries.length;
-  const answeredQueries = userQueries.filter(q => q.Status === 'answered').length;
+  // Answered if the alumni sent the last message
+  const answeredQueries = userQueries.filter(q => q.Latest_Sender_Role === 'alumni').length;
   const pendingQueries  = totalQueries - answeredQueries;
 
   const completedFields = [
@@ -172,9 +169,6 @@ export function StudentDashboard() {
   const hour      = new Date().getHours();
   const greeting  = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
   const firstName = user?.name?.split(' ')[0] ?? 'there';
-
-  const getInitials = (name: string) =>
-    name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
   const handleApply = async (jobId: number, jobTitle: string) => {
     setApplyingId(jobId);
@@ -193,7 +187,6 @@ export function StudentDashboard() {
     <DashboardLayout title="Student Dashboard">
       <div className="space-y-6">
 
-        {/* ── Welcome Banner ─────────────────────────────────────────────── */}
         <div className="relative rounded-2xl overflow-hidden border border-border bg-gradient-to-br from-primary/5 via-background to-primary/10 p-6">
           <div className="pointer-events-none absolute -right-10 -top-10 size-52 rounded-full bg-primary/5" />
           <div className="pointer-events-none absolute right-20 bottom-0 size-28 rounded-full bg-primary/5" />
@@ -210,7 +203,6 @@ export function StudentDashboard() {
                   : 'All your queries have been answered. Keep exploring!'}
               </p>
 
-              {/* Profile completion — hidden when 100% */}
               {profileCompletion < 100 && (
                 <div className="pt-2 space-y-1">
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -240,7 +232,6 @@ export function StudentDashboard() {
           </div>
         </div>
 
-        {/* ── Stats — 2 cols on mobile, 4 on desktop, all clickable ──────── */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <StatCard
             label="Total Queries"
@@ -280,7 +271,6 @@ export function StudentDashboard() {
           />
         </div>
 
-        {/* ── Quick Actions ───────────────────────────────────────────────── */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Quick Actions</CardTitle>
@@ -306,10 +296,7 @@ export function StudentDashboard() {
           </CardContent>
         </Card>
 
-        {/* ── Middle Row: Jobs + Events ───────────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-          {/* Recent Job Postings */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-3">
               <CardTitle className="text-base flex items-center gap-2">
@@ -334,9 +321,7 @@ export function StudentDashboard() {
                     <div
                       key={job.Job_ID}
                       className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
-                        hasApplied
-                          ? 'border-emerald-200 bg-emerald-50/50'
-                          : 'border-border hover:bg-muted/30'
+                        hasApplied ? 'border-emerald-200 bg-emerald-50/50' : 'border-border hover:bg-muted/30'
                       }`}
                     >
                       <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -368,12 +353,10 @@ export function StudentDashboard() {
             </CardContent>
           </Card>
 
-          {/* Upcoming Events */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-3">
               <CardTitle className="text-base flex items-center gap-2">
-                <CalendarDays className="size-4 text-muted-foreground" />
-                Upcoming Events
+                <CalendarDays className="size-4 text-muted-foreground" /> Upcoming Events
               </CardTitle>
               <Link to="/events">
                 <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-muted-foreground gap-1">
@@ -426,15 +409,11 @@ export function StudentDashboard() {
           </Card>
         </div>
 
-        {/* ── Bottom Row: Queries + Suggested Alumni ─────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-
-          {/* Recent Queries */}
           <Card className="lg:col-span-2">
             <CardHeader className="flex flex-row items-center justify-between pb-3">
               <CardTitle className="text-base flex items-center gap-2">
-                <MessageSquare className="size-4 text-muted-foreground" />
-                Recent Queries
+                <MessageSquare className="size-4 text-muted-foreground" /> Recent Queries
               </CardTitle>
               <Link to="/my-queries">
                 <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-muted-foreground gap-1">
@@ -464,53 +443,62 @@ export function StudentDashboard() {
                 </div>
               ) : (
                 <div className="space-y-1">
-                  {userQueries.slice(0, 5).map(query => (
-                    <Link
-                      key={query.Query_ID}
-                      to={`/chat/${query.Query_ID}`}
-                      className="flex items-center justify-between p-3 rounded-lg border border-transparent hover:border-border hover:bg-muted/30 transition-all group"
-                    >
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <div className="size-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-xs font-semibold text-primary">
-                          {query.alumniName?.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                  {userQueries.slice(0, 5).map(query => {
+                    const isWaitingForAlumni = query.Latest_Sender_Role === 'student' || !query.Latest_Sender_Role;
+
+                    return (
+                      <Link
+                        key={query.Query_ID}
+                        to={`/chat/${query.Query_ID}`}
+                        className="flex items-center justify-between p-3 rounded-lg border border-transparent hover:border-border hover:bg-muted/30 transition-all group"
+                      >
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <UserAvatar 
+                            profilePic={query.Profile_Pic} 
+                            name={query.alumniName} 
+                            className="size-9 text-xs" 
+                          />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium group-hover:text-primary transition-colors">
+                              {query.alumniName}
+                            </p>
+                            <p className={`text-xs truncate mt-0.5 ${query.isUnread ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+                              {query.Content?.substring(0, 70)}...
+                            </p>
+                            <p className="text-[10px] text-muted-foreground mt-1">
+                              {new Date(query.Query_Date).toLocaleDateString()}
+                            </p>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium group-hover:text-primary transition-colors">
-                            {query.alumniName}
-                          </p>
-                          <p className="text-xs text-muted-foreground truncate mt-0.5">
-                            {query.Content?.substring(0, 70)}...
-                          </p>
-                          <p className="text-[10px] text-muted-foreground mt-1">
-                            {new Date(query.Query_Date).toLocaleDateString()}
-                          </p>
+                        <div className="flex items-center gap-2 shrink-0 ml-3">
+                          <Badge
+                            variant={query.isUnread ? 'default' : 'secondary'}
+                            className="text-xs"
+                          >
+                            {query.isUnread ? (
+                              <span className="flex items-center gap-1">
+                                <MessageCircle className="size-2.5" />New Reply
+                              </span>
+                            ) : isWaitingForAlumni ? (
+                              <span className="flex items-center gap-1">
+                                <Clock className="size-2.5" />Pending
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1">
+                                <CheckCircle className="size-2.5" />Answered
+                              </span>
+                            )}
+                          </Badge>
+                          <ArrowRight className="size-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0 ml-3">
-                        <Badge
-                          variant={query.Status === 'answered' ? 'default' : 'secondary'}
-                          className="text-xs"
-                        >
-                          {query.Status === 'answered' ? (
-                            <span className="flex items-center gap-1">
-                              <CheckCircle className="size-2.5" />Answered
-                            </span>
-                          ) : (
-                            <span className="flex items-center gap-1">
-                              <Clock className="size-2.5" />Pending
-                            </span>
-                          )}
-                        </Badge>
-                        <ArrowRight className="size-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </div>
-                    </Link>
-                  ))}
+                      </Link>
+                    )
+                  })}
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* Suggested Alumni */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-3">
               <CardTitle className="text-base flex items-center gap-2">
@@ -527,15 +515,17 @@ export function StudentDashboard() {
               {suggestedAlumni.length === 0 ? (
                 <p className="text-center py-6 text-sm text-muted-foreground">No alumni yet.</p>
               ) : (
-                suggestedAlumni.map((alumni, i) => (
+                suggestedAlumni.map((alumni) => (
                   <Link
                     key={alumni.Alumni_ID}
                     to={`/alumni/${alumni.Alumni_ID}`}
                     className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors"
                   >
-                    <div className={`size-10 rounded-full flex items-center justify-center text-sm font-semibold shrink-0 ${avatarColors[i % avatarColors.length]}`}>
-                      {getInitials(alumni.Name)}
-                    </div>
+                    <UserAvatar 
+                      profilePic={alumni.Profile_Pic} 
+                      name={alumni.Name} 
+                      className="size-10 text-sm" 
+                    />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{alumni.Name}</p>
                       <p className="text-xs text-muted-foreground truncate">
@@ -556,7 +546,6 @@ export function StudentDashboard() {
               </Link>
             </CardContent>
           </Card>
-
         </div>
       </div>
     </DashboardLayout>

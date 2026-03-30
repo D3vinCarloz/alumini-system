@@ -7,7 +7,7 @@ import {
   Dialog, DialogContent, DialogHeader,
   DialogTitle, DialogDescription,
 } from '../../components/ui/dialog';
-import { Briefcase, Building2, Search, CheckCircle, Upload, FileText, X } from 'lucide-react';
+import { Briefcase, Building2, Search, CheckCircle, Upload, FileText, X, AlertCircle, Clock } from 'lucide-react';
 import { apiFetch, apiUpload } from '../../lib/api';
 import { toast } from 'sonner';
 
@@ -22,18 +22,12 @@ interface Job {
 
 interface Application {
   Job_ID: number;
+  Status: string;
 }
-
-const statusColors: Record<string, string> = {
-  applied:     'bg-blue-100 text-blue-700',
-  viewed:      'bg-purple-100 text-purple-700',
-  shortlisted: 'bg-emerald-100 text-emerald-700',
-  rejected:    'bg-red-100 text-red-700',
-};
 
 export function StudentJobsPage() {
   const [allJobs, setAllJobs]               = useState<Job[]>([]);
-  const [appliedJobIds, setAppliedJobIds]   = useState<Set<number>>(new Set());
+  const [applicationMap, setApplicationMap] = useState<Map<number, string>>(new Map());
   const [loading, setLoading]               = useState(true);
   const [searchTerm, setSearchTerm]         = useState('');
 
@@ -43,15 +37,37 @@ export function StudentJobsPage() {
   const [submitting, setSubmitting]         = useState(false);
   const fileInputRef                        = useRef<HTMLInputElement>(null);
 
+  // 🟢 FIXED: Check for token to avoid 401 error
+  useEffect(() => {
+    if (!localStorage.getItem('token')) return; 
+
+    apiFetch('/notifications/read-by-type', {
+      method: 'PUT',
+      body: JSON.stringify({ types: ['application', 'job', 'application_status'] })
+    })
+    .then(() => window.dispatchEvent(new Event('notifications-updated')))
+    .catch(err => console.error('Failed to clear job notifications', err));
+  }, []);
+
   useEffect(() => {
     const fetchAll = async () => {
+      // 🟢 FIXED: Check for token to avoid 401 error
+      if (!localStorage.getItem('token')) {
+        setLoading(false);
+        return;
+      }
+
       try {
         const [jobsData, appsData] = await Promise.all([
           apiFetch<Job[]>('/jobs'),
           apiFetch<Application[]>('/applications/my'),
         ]);
         setAllJobs(jobsData);
-        setAppliedJobIds(new Set(appsData.map(a => a.Job_ID)));
+        
+        const statusMap = new Map();
+        appsData.forEach(app => statusMap.set(app.Job_ID, app.Status.toLowerCase()));
+        setApplicationMap(statusMap);
+        
       } catch (err) {
         console.error(err);
         toast.error('Failed to load jobs');
@@ -71,7 +87,10 @@ export function StudentJobsPage() {
       if (resumeFile) formData.append('resume', resumeFile);
 
       await apiUpload(`/applications/${applyJob.Job_ID}`, formData);
-      setAppliedJobIds(prev => new Set([...prev, applyJob.Job_ID]));
+      
+      // Update local state to show 'applied' immediately
+      setApplicationMap(prev => new Map(prev).set(applyJob.Job_ID, 'applied'));
+      
       toast.success(`Applied for "${applyJob.Job_Title}" successfully!`);
       setApplyJob(null);
       setResumeFile(null);
@@ -100,9 +119,9 @@ export function StudentJobsPage() {
               Opportunities posted by alumni{!loading && ` — ${allJobs.length} available`}
             </p>
           </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-lg">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-lg border border-border">
             <CheckCircle className="size-4 text-emerald-600" />
-            {appliedJobIds.size} applied
+            <span className="font-medium">{applicationMap.size}</span> Total Applications
           </div>
         </div>
 
@@ -145,8 +164,8 @@ export function StudentJobsPage() {
         ) : filteredJobs.length === 0 ? (
           <Card>
             <CardContent className="py-16 text-center">
-              <Briefcase className="size-12 text-muted-foreground mx-auto mb-4" />
-              <p className="font-medium text-muted-foreground">
+              <Briefcase className="size-12 text-muted-foreground mx-auto mb-4 opacity-30" />
+              <p className="font-medium text-muted-foreground text-lg">
                 {allJobs.length === 0 ? 'No job postings yet.' : 'No jobs match your search.'}
               </p>
             </CardContent>
@@ -154,53 +173,75 @@ export function StudentJobsPage() {
         ) : (
           <div className="grid gap-4">
             {filteredJobs.map(job => {
-              const hasApplied = appliedJobIds.has(job.Job_ID);
+              const appStatus = applicationMap.get(job.Job_ID);
+              const isRejected = appStatus === 'rejected';
+              const isShortlisted = appStatus === 'shortlisted';
+              const isApplied = appStatus === 'applied' || appStatus === 'viewed';
+
               return (
                 <Card
                   key={job.Job_ID}
-                  className={`transition-shadow hover:shadow-md ${hasApplied ? 'border-emerald-200' : ''}`}
+                  className={`transition-shadow hover:shadow-md ${
+                    isShortlisted ? 'border-emerald-200 bg-emerald-50/10' :
+                    isRejected ? 'border-red-200 bg-red-50/10 opacity-70' :
+                    isApplied ? 'border-blue-200' : ''
+                  }`}
                 >
                   <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                       <div className="flex items-start gap-4">
-                        <div className="size-12 rounded-lg border border-border bg-muted/50 flex items-center justify-center shrink-0">
-                          <Building2 className="size-6 text-muted-foreground" />
+                        <div className={`size-12 rounded-lg border border-border flex items-center justify-center shrink-0 ${isRejected ? 'bg-red-50/50' : 'bg-muted/50'}`}>
+                          <Building2 className={`size-6 ${isRejected ? 'text-red-400' : 'text-muted-foreground'}`} />
                         </div>
                         <div>
-                          <CardTitle className="text-base">{job.Job_Title}</CardTitle>
-                          <p className="text-sm text-muted-foreground mt-0.5">{job.Company_Name}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">
+                          <CardTitle className={`text-lg ${isRejected ? 'line-through text-muted-foreground' : ''}`}>
+                            {job.Job_Title}
+                          </CardTitle>
+                          <p className="text-sm font-medium text-muted-foreground mt-0.5">{job.Company_Name}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
                             Posted by <span className="font-medium text-foreground">{job.postedByName}</span>
                             {' · '}{new Date(job.Posting_Date).toLocaleDateString()}
                           </p>
                         </div>
                       </div>
 
-                      {/* Apply button */}
-                      {hasApplied ? (
-                        <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200 shrink-0">
-                          <CheckCircle className="size-3.5" />Applied
-                        </span>
-                      ) : (
-                        <Button
-                          size="sm"
-                          onClick={() => setApplyJob(job)}
-                          className="shrink-0"
-                        >
-                          Apply Now
-                        </Button>
-                      )}
+                      <div className="shrink-0 self-start">
+                        {isShortlisted ? (
+                          <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-100 px-3 py-1.5 rounded-full border border-emerald-300">
+                            <CheckCircle className="size-3.5" /> Shortlisted
+                          </span>
+                        ) : isRejected ? (
+                          <span className="flex items-center gap-1.5 text-xs font-bold text-red-700 bg-red-100 px-3 py-1.5 rounded-full border border-red-200">
+                            <X className="size-3.5" /> Rejected
+                          </span>
+                        ) : isApplied ? (
+                          <span className="flex items-center gap-1.5 text-xs font-medium text-blue-700 bg-blue-100 px-3 py-1.5 rounded-full border border-blue-200">
+                            <Clock className="size-3.5" /> Applied / Pending
+                          </span>
+                        ) : (
+                          <Button size="sm" onClick={() => setApplyJob(job)} className="w-full sm:w-auto">
+                            Apply Now
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </CardHeader>
 
                   <CardContent className="pt-0">
-                    <p className="text-sm text-muted-foreground leading-relaxed">
+                    <p className={`text-sm leading-relaxed ${isRejected ? 'text-muted-foreground/60 line-clamp-2' : 'text-muted-foreground'}`}>
                       {job.Description}
                     </p>
-                    {hasApplied && (
-                      <div className="mt-3 flex items-center gap-2 text-xs text-emerald-600 font-medium">
-                        <CheckCircle className="size-3.5" />
-                        You have applied for this position
+                    
+                    {isShortlisted && (
+                      <div className="mt-4 flex items-center gap-2 text-xs text-emerald-700 font-semibold bg-emerald-50 p-2 rounded-md border border-emerald-100">
+                        <CheckCircle className="size-4" />
+                        Congratulations! You have been shortlisted for this position.
+                      </div>
+                    )}
+                    {isRejected && (
+                      <div className="mt-4 flex items-center gap-2 text-xs text-red-600 font-medium">
+                        <AlertCircle className="size-3.5" />
+                        Your application was not selected for this role.
                       </div>
                     )}
                   </CardContent>
@@ -223,20 +264,16 @@ export function StudentJobsPage() {
           </DialogHeader>
 
           <div className="space-y-4 mt-2">
-
-            {/* Job summary */}
             <div className="p-3 rounded-lg bg-muted/50 border border-border">
               <p className="text-sm font-medium">{applyJob?.Job_Title}</p>
               <p className="text-xs text-muted-foreground mt-0.5">{applyJob?.Company_Name}</p>
               <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{applyJob?.Description}</p>
             </div>
 
-            {/* Resume upload */}
             <div className="space-y-2">
               <p className="text-sm font-medium">Resume (PDF)</p>
 
               {resumeFile ? (
-                // File selected preview
                 <div className="flex items-center gap-3 p-3 rounded-lg border border-emerald-200 bg-emerald-50">
                   <FileText className="size-5 text-emerald-600 shrink-0" />
                   <div className="flex-1 min-w-0">
@@ -253,7 +290,6 @@ export function StudentJobsPage() {
                   </button>
                 </div>
               ) : (
-                // Upload area
                 <div
                   className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors"
                   onClick={() => fileInputRef.current?.click()}
@@ -283,13 +319,9 @@ export function StudentJobsPage() {
                   setResumeFile(file);
                 }}
               />
-
-              <p className="text-xs text-muted-foreground">
-                * Resume is optional but recommended
-              </p>
+              <p className="text-xs text-muted-foreground">* Resume is optional but recommended</p>
             </div>
 
-            {/* Buttons */}
             <div className="flex gap-3">
               <Button
                 variant="outline"
@@ -311,11 +343,9 @@ export function StudentJobsPage() {
                   : 'Submit Application'}
               </Button>
             </div>
-
           </div>
         </DialogContent>
       </Dialog>
-
     </DashboardLayout>
   );
 }

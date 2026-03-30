@@ -42,7 +42,6 @@ export function EventsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
-  // Form state
   const [title, setTitle]           = useState('');
   const [description, setDescription] = useState('');
   const [eventDate, setEventDate]   = useState('');
@@ -108,7 +107,6 @@ export function EventsPage() {
     }
   };
 
-  // Split into upcoming and past
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const upcoming = events.filter(e => new Date(e.Event_Date) >= today);
@@ -131,13 +129,11 @@ export function EventsPage() {
       <Card className={`transition-shadow hover:shadow-md ${isPast ? 'opacity-60' : ''}`}>
         <CardContent className="pt-5 pb-5">
           <div className="flex items-start gap-4">
-            {/* Date badge */}
             <div className="shrink-0 w-14 rounded-xl border border-border bg-muted/30 flex flex-col items-center justify-center py-2">
               <span className="text-xl font-bold leading-none text-foreground">{day}</span>
               <span className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">{month}</span>
             </div>
 
-            {/* Content */}
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
@@ -192,7 +188,6 @@ export function EventsPage() {
     <DashboardLayout title="Events">
       <div className="space-y-6">
 
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-semibold">Events</h2>
@@ -201,13 +196,13 @@ export function EventsPage() {
             </p>
           </div>
 
-          {/* Only alumni/admin see Add button */}
           {canCreate && (
             <Dialog
               open={isDialogOpen}
               onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}
             >
-              <DialogTrigger>
+              {/* 🟢 FIXED: Added asChild to DialogTrigger */}
+              <DialogTrigger asChild>
                 <Button>
                   <Plus className="size-4 mr-2" />
                   Add Event
@@ -299,7 +294,6 @@ export function EventsPage() {
           </Card>
         ) : (
           <>
-            {/* Upcoming */}
             {upcoming.length > 0 && (
               <div className="space-y-3">
                 <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
@@ -309,7 +303,6 @@ export function EventsPage() {
               </div>
             )}
 
-            {/* Past */}
             {past.length > 0 && (
               <div className="space-y-3">
                 <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
