@@ -57,7 +57,7 @@ router.put('/read-by-type', authenticate, async (req, res) => {
     
     // 🟢 FIXED: Changed TRUE to 1 for stricter MySQL compatibility
     await db.query(
-      `UPDATE notifications SET Is_Read = TRUE WHERE User_ID = ? AND Type IN (${placeholders})`,
+      //`UPDATE notifications SET Is_Read = TRUE WHERE User_ID = ? AND Type IN (${placeholders})`,
       `UPDATE NOTIFICATIONS SET Is_Read = 1 WHERE User_ID = ? AND Type IN (${placeholders})`,
       [req.user.id, ...types]
     );

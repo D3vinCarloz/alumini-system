@@ -8,10 +8,10 @@ const BASE = '/api';
 /// <reference types="vite/client" />
 
 // Ensure VITE_API_URL is read safely
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+c//onst API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // Remove trailing slash if present
-const BASE = API_URL.replace(/\/$/, '');
+//const BASE = API_URL.replace(/\/$/, '');
 
 function getToken(): string | null {
   return localStorage.getItem('token');
