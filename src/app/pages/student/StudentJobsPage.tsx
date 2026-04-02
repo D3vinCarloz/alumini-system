@@ -37,13 +37,13 @@ export function StudentJobsPage() {
   const [submitting, setSubmitting]         = useState(false);
   const fileInputRef                        = useRef<HTMLInputElement>(null);
 
-  // 🟢 FIXED: Check for token to avoid 401 error
   useEffect(() => {
-    if (!localStorage.getItem('token')) return; 
+    if (!localStorage.getItem('token')) return;
 
     apiFetch('/notifications/read-by-type', {
       method: 'PUT',
-      body: JSON.stringify({ types: ['application', 'job', 'application_status'] })
+      // 🟢 FIXED: Removed 'application_status' to match DB ENUM
+      body: JSON.stringify({ types: ['application', 'job'] })
     })
     .then(() => window.dispatchEvent(new Event('notifications-updated')))
     .catch(err => console.error('Failed to clear job notifications', err));
@@ -51,12 +51,6 @@ export function StudentJobsPage() {
 
   useEffect(() => {
     const fetchAll = async () => {
-      // 🟢 FIXED: Check for token to avoid 401 error
-      if (!localStorage.getItem('token')) {
-        setLoading(false);
-        return;
-      }
-
       try {
         const [jobsData, appsData] = await Promise.all([
           apiFetch<Job[]>('/jobs'),
@@ -264,12 +258,14 @@ export function StudentJobsPage() {
           </DialogHeader>
 
           <div className="space-y-4 mt-2">
+            {/* Job summary */}
             <div className="p-3 rounded-lg bg-muted/50 border border-border">
               <p className="text-sm font-medium">{applyJob?.Job_Title}</p>
               <p className="text-xs text-muted-foreground mt-0.5">{applyJob?.Company_Name}</p>
               <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{applyJob?.Description}</p>
             </div>
 
+            {/* Resume upload */}
             <div className="space-y-2">
               <p className="text-sm font-medium">Resume (PDF)</p>
 
@@ -322,6 +318,7 @@ export function StudentJobsPage() {
               <p className="text-xs text-muted-foreground">* Resume is optional but recommended</p>
             </div>
 
+            {/* Buttons */}
             <div className="flex gap-3">
               <Button
                 variant="outline"

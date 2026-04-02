@@ -192,20 +192,19 @@ export function JobPage() {
   const [company, setCompany]         = useState('');
   const [description, setDescription] = useState('');
 
-  // 🟢 FIXED: Check for token to avoid 401 error
   useEffect(() => {
     if (!localStorage.getItem('token')) return; 
 
     apiFetch('/notifications/read-by-type', {
       method: 'PUT',
-      body: JSON.stringify({ types: ['application', 'job', 'application_status'] })
+      // 🟢 FIXED: Removed 'application_status' to match DB ENUM
+      body: JSON.stringify({ types: ['application', 'job'] })
     })
     .then(() => window.dispatchEvent(new Event('notifications-updated')))
     .catch(err => console.error('Failed to clear job notifications', err));
   }, []);
 
   const loadJobs = async () => {
-    // 🟢 FIXED: Check for token to avoid 401 error
     if (!localStorage.getItem('token')) {
       setLoading(false);
       return;
