@@ -14,15 +14,14 @@ export function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-// FIND and REPLACE only this function:
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
   setError('');
-  const success = await login(email, password);
-  if (success) {
+  const result = await login(email.trim(), password);
+  if (result.success) {
     navigate('/dashboard');
   } else {
-    setError('Invalid email or password');
+    setError(result.message || 'Login failed');
   }
 };
 

@@ -8,9 +8,9 @@ router.get('/', authenticate, async (req, res) => {
     const [rows] = await db.query(`
       SELECT j.Job_ID, j.Job_Title, j.Company_Name, j.Description, j.Posting_Date,
              u.Name AS postedByName, j.Alumni_ID
-      FROM   JOB_POSTINGS j
-      JOIN   ALUMNI a ON a.Alumni_ID = j.Alumni_ID
-      JOIN   USER   u ON u.User_ID   = a.User_ID
+      FROM   job_postings j
+      JOIN   alumni a ON a.Alumni_ID = j.Alumni_ID
+      JOIN   user   u ON u.User_ID   = a.User_ID
       ORDER  BY j.Posting_Date DESC
     `);
     res.json(rows);
@@ -26,7 +26,7 @@ router.post('/', authenticate, requireRole('alumni'), async (req, res) => {
     const { jobTitle, companyName, description } = req.body;
 
     await db.query(
-      'INSERT INTO JOB_POSTINGS (Alumni_ID, Job_Title, Company_Name, Description) VALUES (?,?,?,?)',
+      'INSERT INTO job_postings (Alumni_ID, Job_Title, Company_Name, Description) VALUES (?,?,?,?)',
       [req.user.subId, jobTitle, companyName, description]
     );
     res.status(201).json({ message: 'Job posted successfully' });
@@ -40,7 +40,7 @@ router.post('/', authenticate, requireRole('alumni'), async (req, res) => {
 router.delete('/:jobId', authenticate, requireRole('alumni'), async (req, res) => {
   try {
     await db.query(
-      'DELETE FROM JOB_POSTINGS WHERE Job_ID = ? AND Alumni_ID = ?',
+      'DELETE FROM job_postings WHERE Job_ID = ? AND Alumni_ID = ?',
       [req.params.jobId, req.user.subId]
     );
     res.json({ message: 'Job deleted' });

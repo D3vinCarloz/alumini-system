@@ -9,8 +9,8 @@ router.get('/', authenticate, async (_req, res) => {
       SELECT e.Event_ID, e.Title, e.Description, e.Event_Date,
              e.Event_Time, e.Mode, e.Type, e.created_at,
              u.Name AS createdByName, u.Role AS createdByRole
-      FROM   EVENTS e
-      JOIN   USER u ON u.User_ID = e.Created_By
+      FROM   events e
+      JOIN   user u ON u.User_ID = e.Created_By
       ORDER  BY e.Event_Date ASC
     `);
     res.json(rows);
@@ -30,7 +30,7 @@ router.post('/', authenticate, requireRole('alumni', 'admin'), async (req, res) 
     }
 
     await db.query(
-      `INSERT INTO EVENTS (Title, Description, Event_Date, Event_Time, Mode, Type, Created_By)
+      `INSERT INTO events (Title, Description, Event_Date, Event_Time, Mode, Type, Created_By)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [title, description, eventDate, eventTime, mode, type, req.user.id]
     );
@@ -45,7 +45,7 @@ router.post('/', authenticate, requireRole('alumni', 'admin'), async (req, res) 
 router.delete('/:eventId', authenticate, requireRole('alumni', 'admin'), async (req, res) => {
   try {
     await db.query(
-      'DELETE FROM EVENTS WHERE Event_ID = ? AND (Created_By = ? OR ? = "admin")',
+      'DELETE FROM events WHERE Event_ID = ? AND (Created_By = ? OR ? = "admin")',
       [req.params.eventId, req.user.id, req.user.role]
     );
     res.json({ message: 'Event deleted' });

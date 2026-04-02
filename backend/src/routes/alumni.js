@@ -9,8 +9,8 @@ router.get('/', authenticate, async (req, res) => {
       SELECT a.Alumni_ID, u.User_ID, u.Name, u.Email, u.Profile_Pic, u.LinkedIn,
              a.Department, a.Graduation_Year, a.Batch,
              a.Contact_Info, a.Bio, a.Verification_Status
-      FROM   ALUMNI a
-      JOIN   USER u ON u.User_ID = a.User_ID
+      FROM   alumni a
+      JOIN   user u ON u.User_ID = a.User_ID
       ORDER  BY u.Name
     `);
     res.json(rows);
@@ -28,8 +28,8 @@ router.get('/my-profile', authenticate, requireRole('alumni'), async (req, res) 
              a.Alumni_ID, a.Department, a.Graduation_Year,
              a.Batch, a.Contact_Info, a.Bio, 
              a.Verification_Status, a.Status
-      FROM   USER u
-      JOIN   ALUMNI a ON a.User_ID = u.User_ID
+      FROM   user u
+      JOIN   alumni a ON a.User_ID = u.User_ID
       WHERE  u.User_ID = ?
     `, [req.user.id]);
 
@@ -47,12 +47,12 @@ router.put('/my-profile', authenticate, requireRole('alumni'), async (req, res) 
     const { name, department, graduationYear, batch, contactInfo, bio, dob, gender, linkedin } = req.body;
 
     await db.query(
-      'UPDATE USER SET Name = ?, DOB = ?, Gender = ?, LinkedIn = ? WHERE User_ID = ?',
+      'UPDATE user SET Name = ?, DOB = ?, Gender = ?, LinkedIn = ? WHERE User_ID = ?',
       [name, dob || null, gender || null, linkedin || null, req.user.id]
     );
 
     await db.query(`
-      UPDATE ALUMNI
+      UPDATE alumni
       SET Department = ?, Graduation_Year = ?, Batch = ?,
           Contact_Info = ?, Bio = ?
       WHERE User_ID = ?
@@ -72,8 +72,8 @@ router.get('/:alumniId', authenticate, async (req, res) => {
       SELECT a.Alumni_ID, u.User_ID, u.Name, u.Email, u.Profile_Pic, u.LinkedIn,
              a.Department, a.Graduation_Year, a.Batch,
              a.Contact_Info, a.Bio, a.Verification_Status
-      FROM   ALUMNI a
-      JOIN   USER u ON u.User_ID = a.User_ID
+      FROM   alumni a
+      JOIN   user u ON u.User_ID = a.User_ID
       WHERE  a.Alumni_ID = ?
     `, [req.params.alumniId]);
 
@@ -84,7 +84,7 @@ router.get('/:alumniId', authenticate, async (req, res) => {
       [req.params.alumniId]
     );
     const [jobs] = await db.query(
-      'SELECT * FROM JOB_POSTINGS WHERE Alumni_ID = ? ORDER BY Posting_Date DESC',
+      'SELECT * FROM job_postings WHERE Alumni_ID = ? ORDER BY Posting_Date DESC',
       [req.params.alumniId]
     );
 
@@ -99,7 +99,7 @@ router.get('/:alumniId', authenticate, async (req, res) => {
 router.patch('/:alumniId/verify', authenticate, requireRole('admin'), async (req, res) => {
   try {
     await db.query(
-      "UPDATE ALUMNI SET Verification_Status = TRUE, Status = 'verified' WHERE Alumni_ID = ?",
+      "UPDATE alumni SET Verification_Status = TRUE, Status = 'verified' WHERE Alumni_ID = ?",
       [req.params.alumniId]
     );
     res.json({ message: 'Alumni verified' });
@@ -113,7 +113,7 @@ router.patch('/:alumniId/verify', authenticate, requireRole('admin'), async (req
 router.patch('/:alumniId/reject', authenticate, requireRole('admin'), async (req, res) => {
   try {
     await db.query(
-      "UPDATE ALUMNI SET Verification_Status = FALSE, Status = 'rejected' WHERE Alumni_ID = ?",
+      "UPDATE alumni SET Verification_Status = FALSE, Status = 'rejected' WHERE Alumni_ID = ?",
       [req.params.alumniId]
     );
     res.json({ message: 'Alumni rejected' });
@@ -128,7 +128,7 @@ router.put('/profile', authenticate, requireRole('alumni'), async (req, res) => 
   try {
     const { bio, contactInfo, batch } = req.body;
     await db.query(
-      'UPDATE ALUMNI SET Bio = ?, Contact_Info = ?, Batch = ? WHERE Alumni_ID = ?',
+      'UPDATE alumni SET Bio = ?, Contact_Info = ?, Batch = ? WHERE Alumni_ID = ?',
       [bio, contactInfo, batch, req.user.subId]
     );
     res.json({ message: 'Profile updated' });

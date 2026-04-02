@@ -15,17 +15,17 @@ router.get('/', authenticate, async (req, res) => {
              lr.Latest_Sender_Role,
              s_user.Name AS studentName, s_user.Profile_Pic AS studentProfilePic,
              a_user.Name AS alumniName, a_user.Profile_Pic AS alumniProfilePic
-      FROM   QUERY q
-      JOIN   STUDENT st   ON st.Student_ID = q.Student_ID
-      JOIN   USER s_user  ON s_user.User_ID = st.User_ID
-      JOIN   ALUMNI al    ON al.Alumni_ID   = q.Alumni_ID
-      JOIN   USER a_user  ON a_user.User_ID = al.User_ID
+      FROM   query q
+      JOIN   student st   ON st.Student_ID = q.Student_ID
+      JOIN   user s_user  ON s_user.User_ID = st.User_ID
+      JOIN   alumni al    ON al.Alumni_ID   = q.Alumni_ID
+      JOIN   user a_user  ON a_user.User_ID = al.User_ID
       LEFT JOIN (
           SELECT r1.Query_ID, r1.Content AS Latest_Content, r1.Reply_Date AS Latest_Date, u.role AS Latest_Sender_Role
-          FROM REPLY r1
-          JOIN USER u ON r1.User_ID = u.User_ID
+          FROM reply r1
+          JOIN user u ON r1.User_ID = u.User_ID
           INNER JOIN (
-              SELECT Query_ID, MAX(Reply_Date) AS MaxDate FROM REPLY GROUP BY Query_ID
+              SELECT Query_ID, MAX(Reply_Date) AS MaxDate FROM reply GROUP BY Query_ID
           ) r2 ON r1.Query_ID = r2.Query_ID AND r1.Reply_Date = r2.MaxDate
       ) lr ON lr.Query_ID = q.Query_ID
       WHERE  ${col} = ?
@@ -59,9 +59,9 @@ router.get('/admin/all', authenticate, async (req, res) => {
       SELECT q.Query_ID, q.Content, q.Query_Date, q.Status,
              s_u.Name AS studentName, s_u.Profile_Pic AS studentProfilePic,
              a_u.Name AS alumniName, a_u.Profile_Pic AS alumniProfilePic
-      FROM   QUERY q
-      JOIN   STUDENT s ON s.Student_ID = q.Student_ID JOIN USER s_u ON s_u.User_ID = s.User_ID
-      JOIN   ALUMNI a  ON a.Alumni_ID = q.Alumni_ID   JOIN USER a_u ON a_u.User_ID = a.User_ID
+      FROM   query q
+      JOIN   student s ON s.Student_ID = q.Student_ID JOIN user s_u ON s_u.User_ID = s.User_ID
+      JOIN   alumni a  ON a.Alumni_ID = q.Alumni_ID   JOIN user a_u ON a_u.User_ID = a.User_ID
       ORDER  BY q.Query_Date DESC
     `);
     res.json(rows);
@@ -80,9 +80,9 @@ router.get('/:queryId', authenticate, async (req, res) => {
       SELECT q.Query_ID, q.Content, q.Query_Date, q.Status,
              s_u.Name AS studentName, q.Student_ID,
              a_u.Name AS alumniName, q.Alumni_ID
-      FROM   QUERY q
-      JOIN   STUDENT s ON s.Student_ID = q.Student_ID JOIN USER s_u ON s_u.User_ID = s.User_ID
-      JOIN   ALUMNI a  ON a.Alumni_ID = q.Alumni_ID   JOIN USER a_u ON a_u.User_ID = a.User_ID
+      FROM   query q
+      JOIN   student s ON s.Student_ID = q.Student_ID JOIN user s_u ON s_u.User_ID = s.User_ID
+      JOIN   alumni a  ON a.Alumni_ID = q.Alumni_ID   JOIN user a_u ON a_u.User_ID = a.User_ID
       WHERE  q.Query_ID = ?
     `;
     const params = [queryId];
@@ -99,17 +99,17 @@ router.get('/:queryId', authenticate, async (req, res) => {
 
     if (role !== 'admin') {
       if ((role === 'alumni' && queryData.Status === 'pending') || (role === 'student' && queryData.Status === 'answered')) {
-        await db.query("UPDATE QUERY SET Status = 'read' WHERE Query_ID = ?", [queryId]);
+        await db.query("UPDATE query SET Status = 'read' WHERE Query_ID = ?", [queryId]);
       }
       await db.query(`
-        UPDATE NOTIFICATIONS SET Is_Read = TRUE WHERE User_ID = ? AND Link LIKE ? AND Is_Read = FALSE
+        UPDATE notifications SET Is_Read = TRUE WHERE User_ID = ? AND Link LIKE ? AND Is_Read = FALSE
       `, [userId, `%/${queryId}`]);
     }
 
     const [replies] = await db.query(`
       SELECT r.Reply_ID, r.User_ID, u.Name AS senderName, u.Profile_Pic, r.Content, r.Reply_Date
-      FROM   REPLY r
-      JOIN   USER u ON u.User_ID = r.User_ID
+      FROM   reply r
+      JOIN   user u ON u.User_ID = r.User_ID
       WHERE  r.Query_ID = ?
       ORDER  BY r.Reply_Date ASC
     `, [queryId]);
@@ -130,19 +130,19 @@ router.post('/', authenticate, requireRole('student'), async (req, res) => {
     if (!alumniId || !content) return res.status(400).json({ message: 'Missing fields' });
 
     const [existing] = await db.query(
-      'SELECT Query_ID FROM QUERY WHERE Student_ID = ? AND Alumni_ID = ?',
+      'SELECT Query_ID FROM query WHERE Student_ID = ? AND Alumni_ID = ?',
       [studentId, alumniId]
     );
 
     if (existing.length > 0) {
       const qId = existing[0].Query_ID;
-      await db.query('INSERT INTO REPLY (Query_ID, User_ID, Content) VALUES (?, ?, ?)', [qId, req.user.id, content]);
-      await db.query("UPDATE QUERY SET Status = 'pending' WHERE Query_ID = ?", [qId]);
+      await db.query('INSERT INTO reply (Query_ID, User_ID, Content) VALUES (?, ?, ?)', [qId, req.user.id, content]);
+      await db.query("UPDATE query SET Status = 'pending' WHERE Query_ID = ?", [qId]);
       return res.status(200).json({ queryId: qId, existing: true });
     }
 
     const [result] = await db.query(
-      "INSERT INTO QUERY (Student_ID, Alumni_ID, Content, Status) VALUES (?, ?, ?, 'pending')",
+      "INSERT INTO query (Student_ID, Alumni_ID, Content, Status) VALUES (?, ?, ?, 'pending')",
       [studentId, alumniId, content]
     );
 

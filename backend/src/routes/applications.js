@@ -15,7 +15,7 @@ router.post('/:jobId', authenticate, requireRole('student'),
 
       // Check already applied
       const [[existing]] = await db.query(
-        'SELECT Application_ID FROM JOB_APPLICATIONS WHERE Job_ID = ? AND Student_ID = ?',
+        'SELECT Application_ID FROM job_applications WHERE Job_ID = ? AND Student_ID = ?',
         [jobId, req.user.subId]
       );
       if (existing) {
@@ -27,16 +27,16 @@ router.post('/:jobId', authenticate, requireRole('student'),
       const resumePath = req.file ? req.file.filename : null;
 
       await db.query(
-        'INSERT INTO JOB_APPLICATIONS (Job_ID, Student_ID, Resume_Path) VALUES (?, ?, ?)',
+        'INSERT INTO job_applications (Job_ID, Student_ID, Resume_Path) VALUES (?, ?, ?)',
         [jobId, req.user.subId, resumePath]
       );
 
       // Notify alumni
       const [[job]] = await db.query(`
         SELECT j.Job_Title, u.User_ID AS alumniUserId
-        FROM   JOB_POSTINGS j
-        JOIN   ALUMNI a ON a.Alumni_ID = j.Alumni_ID
-        JOIN   USER u   ON u.User_ID   = a.User_ID
+        FROM   job_postings j
+        JOIN   alumni a ON a.Alumni_ID = j.Alumni_ID
+        JOIN   user u   ON u.User_ID   = a.User_ID
         WHERE  j.Job_ID = ?
       `, [jobId]);
 
@@ -68,10 +68,10 @@ router.get('/my', authenticate, requireRole('student'), async (req, res) => {
              j.Job_ID, j.Job_Title, j.Company_Name, j.Description,
              u.Name AS postedByName, 
              u.Profile_Pic AS postedByProfilePic /* 👈 ADDED */
-      FROM   JOB_APPLICATIONS a
-      JOIN   JOB_POSTINGS j ON j.Job_ID    = a.Job_ID
-      JOIN   ALUMNI al      ON al.Alumni_ID = j.Alumni_ID
-      JOIN   USER u         ON u.User_ID    = al.User_ID
+      FROM   job_applications a
+      JOIN   job_postings j ON j.Job_ID    = a.Job_ID
+      JOIN   alumni al      ON al.Alumni_ID = j.Alumni_ID
+      JOIN   user u         ON u.User_ID    = al.User_ID
       WHERE  a.Student_ID = ?
       ORDER  BY a.Applied_Date DESC
     `, [req.user.subId]);
@@ -91,9 +91,9 @@ router.get('/job/:jobId', authenticate, requireRole('alumni'), async (req, res) 
              u.Name AS studentName, u.Email AS studentEmail, 
              u.Profile_Pic, /* 👈 ADDED */
              s.Roll_No, s.Department
-      FROM   JOB_APPLICATIONS a
-      JOIN   STUDENT s  ON s.Student_ID = a.Student_ID /* 👈 Cleaned up redundant JOIN */
-      JOIN   USER u     ON u.User_ID    = s.User_ID
+      FROM   job_applications a
+      JOIN   student s  ON s.Student_ID = a.Student_ID /* 👈 Cleaned up redundant JOIN */
+      JOIN   user u     ON u.User_ID    = s.User_ID
       WHERE  a.Job_ID = ?
       ORDER  BY a.Applied_Date DESC
     `, [req.params.jobId]);
@@ -116,7 +116,7 @@ router.get('/resume/:filename', authenticate, async (req, res) => {
 
     // Only allow the student who uploaded OR alumni/admin to view
     const [[app]] = await db.query(
-      'SELECT a.Student_ID FROM JOB_APPLICATIONS a WHERE a.Resume_Path = ?',
+      'SELECT a.Student_ID FROM job_applications a WHERE a.Resume_Path = ?',
       [filename]
     );
 
@@ -125,7 +125,7 @@ router.get('/resume/:filename', authenticate, async (req, res) => {
     // Allow: the student themselves, alumni, admin
     if (req.user.role === 'student') {
       const [[student]] = await db.query(
-        'SELECT Student_ID FROM STUDENT WHERE User_ID = ?',
+        'SELECT Student_ID FROM student WHERE User_ID = ?',
         [req.user.id]
       );
       if (student.Student_ID !== app.Student_ID) {
@@ -154,15 +154,15 @@ router.patch('/:applicationId/status', authenticate, requireRole('alumni'), asyn
     const [[app]] = await db.query(`
       SELECT a.Student_ID, j.Job_Title,
              u.User_ID AS studentUserId, u.Name AS studentName
-      FROM   JOB_APPLICATIONS a
-      JOIN   JOB_POSTINGS j ON j.Job_ID     = a.Job_ID
-      JOIN   STUDENT st     ON st.Student_ID = a.Student_ID
-      JOIN   USER u         ON u.User_ID     = st.User_ID
+      FROM   job_applications a
+      JOIN   job_postings j ON j.Job_ID     = a.Job_ID
+      JOIN   student st     ON st.Student_ID = a.Student_ID
+      JOIN   user u         ON u.User_ID     = st.User_ID
       WHERE  a.Application_ID = ?
     `, [req.params.applicationId]);
 
     await db.query(
-      'UPDATE JOB_APPLICATIONS SET Status = ? WHERE Application_ID = ?',
+      'UPDATE job_applications SET Status = ? WHERE Application_ID = ?',
       [status, req.params.applicationId]
     );
 

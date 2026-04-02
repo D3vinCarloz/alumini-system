@@ -6,7 +6,7 @@ const { authenticate } = require('../middleware/auth');
 router.get('/', authenticate, async (req, res) => {
   try {
     const [rows] = await db.query(
-      'SELECT * FROM NOTIFICATIONS WHERE User_ID = ? ORDER BY created_at DESC LIMIT 50',
+      'SELECT * FROM notifications WHERE User_ID = ? ORDER BY created_at DESC LIMIT 50',
       [req.user.id]
     );
     res.json(rows);
@@ -20,7 +20,7 @@ router.get('/', authenticate, async (req, res) => {
 router.get('/unread-count', authenticate, async (req, res) => {
   try {
     const [[{ count }]] = await db.query(
-      'SELECT COUNT(*) AS count FROM NOTIFICATIONS WHERE User_ID = ? AND Is_Read = FALSE',
+      'SELECT COUNT(*) AS count FROM notifications WHERE User_ID = ? AND Is_Read = FALSE',
       [req.user.id]
     );
     res.json({ count });
@@ -34,7 +34,7 @@ router.get('/unread-count', authenticate, async (req, res) => {
 router.patch('/:id/read', authenticate, async (req, res) => {
   try {
     await db.query(
-      'UPDATE NOTIFICATIONS SET Is_Read = TRUE WHERE Notification_ID = ? AND User_ID = ?',
+      'UPDATE notifications SET Is_Read = TRUE WHERE Notification_ID = ? AND User_ID = ?',
       [req.params.id, req.user.id]
     );
     res.json({ message: 'Marked as read' });
@@ -56,7 +56,7 @@ router.put('/read-by-type', authenticate, async (req, res) => {
     const placeholders = types.map(() => '?').join(',');
     
     await db.query(
-      `UPDATE NOTIFICATIONS SET Is_Read = TRUE WHERE User_ID = ? AND Type IN (${placeholders})`,
+      `UPDATE notifications SET Is_Read = TRUE WHERE User_ID = ? AND Type IN (${placeholders})`,
       [req.user.id, ...types]
     );
 
@@ -71,7 +71,7 @@ router.put('/read-by-type', authenticate, async (req, res) => {
 router.delete('/:id', authenticate, async (req, res) => {
   try {
     const [result] = await db.query(
-      'DELETE FROM NOTIFICATIONS WHERE Notification_ID = ? AND User_ID = ?',
+      'DELETE FROM notifications WHERE Notification_ID = ? AND User_ID = ?',
       [req.params.id, req.user.id]
     );
 

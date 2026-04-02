@@ -14,7 +14,7 @@ router.post('/', authenticate, uploadProfile.single('profilePic'), async (req, r
 
     // Delete old profile pic if exists
     const [[user]] = await db.query(
-      'SELECT Profile_Pic FROM USER WHERE User_ID = ?',
+      'SELECT Profile_Pic FROM user WHERE User_ID = ?',
       [req.user.id]
     );
 
@@ -25,7 +25,7 @@ router.post('/', authenticate, uploadProfile.single('profilePic'), async (req, r
 
     // Save new filename to DB
     await db.query(
-      'UPDATE USER SET Profile_Pic = ? WHERE User_ID = ?',
+      'UPDATE user SET Profile_Pic = ? WHERE User_ID = ?',
       [req.file.filename, req.user.id]
     );
 
@@ -44,7 +44,7 @@ router.post('/', authenticate, uploadProfile.single('profilePic'), async (req, r
 router.delete('/', authenticate, async (req, res) => {
   try {
     const [[user]] = await db.query(
-      'SELECT Profile_Pic FROM USER WHERE User_ID = ?',
+      'SELECT Profile_Pic FROM user WHERE User_ID = ?',
       [req.user.id]
     );
 
@@ -54,7 +54,7 @@ router.delete('/', authenticate, async (req, res) => {
     }
 
     await db.query(
-      'UPDATE USER SET Profile_Pic = NULL WHERE User_ID = ?',
+      'UPDATE user SET Profile_Pic = NULL WHERE User_ID = ?',
       [req.user.id]
     );
 

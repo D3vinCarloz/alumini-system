@@ -11,25 +11,25 @@ router.post('/:queryId', authenticate, async (req, res) => {
 
     // 1. Save the reply message
     await db.query(
-      'INSERT INTO REPLY (Query_ID, User_ID, Content) VALUES (?, ?, ?)',
+      'INSERT INTO reply (Query_ID, User_ID, Content) VALUES (?, ?, ?)',
       [queryId, userId, content]
     );
 
     // 2. Set Query Status & Update UI Tracking columns (isUnread & Latest_Sender_Role)
     const nextStatus = (role === 'student') ? 'pending' : 'answered';
     await db.query(
-      'UPDATE QUERY SET Status = ?, isUnread = 1, Latest_Sender_Role = ? WHERE Query_ID = ?', 
+      'UPDATE query SET Status = ?, isUnread = 1, Latest_Sender_Role = ? WHERE Query_ID = ?', 
       [nextStatus, role, queryId]
     );
 
     // 3. Find Recipient's User_ID
     const [[queryInfo]] = await db.query(`
       SELECT s_u.User_ID as s_uid, a_u.User_ID as a_uid
-      FROM QUERY q
-      JOIN STUDENT s ON s.Student_ID = q.Student_ID
-      JOIN USER s_u   ON s_u.User_ID = s.User_ID
-      JOIN ALUMNI a  ON a.Alumni_ID = q.Alumni_ID
-      JOIN USER a_u   ON a_u.User_ID = a.User_ID
+      FROM query q
+      JOIN student s ON s.Student_ID = q.Student_ID
+      JOIN user s_u   ON s_u.User_ID = s.User_ID
+      JOIN alumni a  ON a.Alumni_ID = q.Alumni_ID
+      JOIN user a_u   ON a_u.User_ID = a.User_ID
       WHERE q.Query_ID = ?
     `, [queryId]);
 

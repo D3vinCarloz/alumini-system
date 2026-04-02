@@ -1,8 +1,10 @@
-const BACKEND_URL = import.meta.env.VITE_API_URL 
-  ? import.meta.env.VITE_API_URL.replace(/\/api$/, '') 
-  : 'http://localhost:5000';
+//const BACKEND_URL = import.meta.env.VITE_API_URL 
+//  ? import.meta.env.VITE_API_URL.replace(/\/api$/, '') 
+//  : 'http://localhost:5000';
+const BACKEND_URL = '';
+const BASE = '/api';
 
-const BASE = `${BACKEND_URL}/api`;
+//const BASE = `${BACKEND_URL}/api`;
 
 function getToken(): string | null {
   return localStorage.getItem('token');

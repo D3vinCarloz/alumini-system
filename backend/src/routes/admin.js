@@ -7,10 +7,10 @@ const guard = [authenticate, requireRole('admin')];
 // GET /api/admin/stats
 router.get('/stats', ...guard, async (_req, res) => {
   try {
-    const [[{ totalUsers }]]           = await db.query('SELECT COUNT(*) AS totalUsers FROM USER');
-    const [[{ totalQueries }]]         = await db.query('SELECT COUNT(*) AS totalQueries FROM QUERY');
+    const [[{ totalUsers }]]           = await db.query('SELECT COUNT(*) AS totalUsers FROM user');
+    const [[{ totalQueries }]]         = await db.query('SELECT COUNT(*) AS totalQueries FROM query');
     const [[{ pendingVerifications }]] = await db.query(
-      "SELECT COUNT(*) AS pendingVerifications FROM ALUMNI WHERE Verification_Status = FALSE"
+      "SELECT COUNT(*) AS pendingVerifications FROM alumni WHERE Verification_Status = FALSE"
     );
     res.json({ totalUsers, totalQueries, pendingVerifications });
   } catch (err) {
@@ -24,7 +24,7 @@ router.get('/users', ...guard, async (_req, res) => {
   try {
     const [rows] = await db.query(
       // 👈 ADDED Profile_Pic
-      'SELECT User_ID, Name, Email, Role, Profile_Pic, created_at FROM USER ORDER BY created_at DESC'
+      'SELECT User_ID, Name, Email, Role, Profile_Pic, created_at FROM user ORDER BY created_at DESC'
     );
     res.json(rows);
   } catch (err) {
@@ -40,11 +40,11 @@ router.get('/queries', ...guard, async (_req, res) => {
       SELECT q.Query_ID, q.Status, q.Query_Date, q.Content,
              s_user.Name AS studentName, s_user.Profile_Pic AS studentProfilePic, /* 👈 ADDED */
              a_user.Name AS alumniName, a_user.Profile_Pic AS alumniProfilePic /* 👈 ADDED */
-      FROM   QUERY q
-      JOIN   STUDENT st  ON st.Student_ID = q.Student_ID
-      JOIN   USER s_user ON s_user.User_ID = st.User_ID
-      JOIN   ALUMNI al   ON al.Alumni_ID   = q.Alumni_ID
-      JOIN   USER a_user ON a_user.User_ID = al.User_ID
+      FROM   query q
+      JOIN   student st  ON st.Student_ID = q.Student_ID
+      JOIN   user s_user ON s_user.User_ID = st.User_ID
+      JOIN   alumni al   ON al.Alumni_ID   = q.Alumni_ID
+      JOIN   user a_user ON a_user.User_ID = al.User_ID
       ORDER  BY q.Query_Date DESC
     `);
     res.json(rows);
@@ -62,8 +62,8 @@ router.get('/alumni', ...guard, async (_req, res) => {
              a.Department, a.Graduation_Year, a.Batch,
              a.Bio, a.Contact_Info,
              a.Verification_Status, a.Status
-      FROM   ALUMNI a
-      JOIN   USER u ON u.User_ID = a.User_ID
+      FROM   alumni a
+      JOIN   user u ON u.User_ID = a.User_ID
       ORDER  BY
         CASE a.Status
           WHEN 'pending'  THEN 1
@@ -87,7 +87,7 @@ router.get('/analytics', ...guard, async (_req, res) => {
       SELECT Department,
              COUNT(*) AS count,
              SUM(CASE WHEN Verification_Status = TRUE THEN 1 ELSE 0 END) AS verified
-      FROM   ALUMNI
+      FROM   alumni
       WHERE  Department IS NOT NULL AND Department != ''
       GROUP  BY Department
       ORDER  BY count DESC
@@ -96,7 +96,7 @@ router.get('/analytics', ...guard, async (_req, res) => {
     // Batch-wise alumni count
     const [byBatch] = await db.query(`
       SELECT Batch, COUNT(*) AS count
-      FROM   ALUMNI
+      FROM   alumni
       WHERE  Batch IS NOT NULL AND Batch != ''
       GROUP  BY Batch
       ORDER  BY Batch DESC
@@ -108,7 +108,7 @@ router.get('/analytics', ...guard, async (_req, res) => {
         COUNT(*) AS total,
         SUM(CASE WHEN Status = 'pending'  THEN 1 ELSE 0 END) AS pending,
         SUM(CASE WHEN Status = 'answered' THEN 1 ELSE 0 END) AS answered
-      FROM QUERY
+      FROM query
     `);
 
     res.json({ byDepartment, byBatch, queryStats });
@@ -122,7 +122,7 @@ router.get('/analytics', ...guard, async (_req, res) => {
 router.get('/user-detail/student/:userId', ...guard, async (req, res) => {
   try {
     const [[data]] = await db.query(
-      'SELECT Student_ID, Roll_No, Department FROM STUDENT WHERE User_ID = ?',
+      'SELECT Student_ID, Roll_No, Department FROM student WHERE User_ID = ?',
       [req.params.userId]
     );
     res.json(data || {});
@@ -138,7 +138,7 @@ router.get('/user-detail/alumni/:userId', ...guard, async (req, res) => {
     const [[data]] = await db.query(
       `SELECT Alumni_ID, Department, Graduation_Year, Batch,
               Contact_Info, Bio, Verification_Status, Status
-       FROM   ALUMNI WHERE User_ID = ?`,
+       FROM   alumni WHERE User_ID = ?`,
       [req.params.userId]
     );
     res.json(data || {});

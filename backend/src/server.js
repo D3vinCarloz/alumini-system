@@ -5,7 +5,9 @@ const path    = require('path');
 
 const app = express();
 
-app.use(cors({ origin: 'http://localhost:5173' }));
+//app.use(cors({ origin: 'http://localhost:5173' }));
+//app.use(cors()); // This allows ANY local port (5173, 5174, etc.) to talk to the backend
+app.use(cors({ origin: 'http://localhost:5174' }));
 app.use(express.json());
 
 // Serve uploaded resumes and profile pictures

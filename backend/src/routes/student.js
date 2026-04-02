@@ -8,8 +8,8 @@ router.get('/profile', authenticate, requireRole('student'), async (req, res) =>
     const [[student]] = await db.query(`
       SELECT u.User_ID, u.Name, u.Email, u.Profile_Pic, u.DOB, u.Gender, u.LinkedIn,
              s.Student_ID, s.Roll_No, s.Department, s.Start_Year, s.End_Year
-      FROM   USER u
-      JOIN   STUDENT s ON s.User_ID = u.User_ID
+      FROM   user u
+      JOIN   student s ON s.User_ID = u.User_ID
       WHERE  u.User_ID = ?
     `, [req.user.id]);
 
@@ -27,12 +27,12 @@ router.put('/profile', authenticate, requireRole('student'), async (req, res) =>
     const { name, rollNo, department, dob, gender, linkedin, startYear, endYear } = req.body;
 
     await db.query(
-      'UPDATE USER SET Name = ?, DOB = ?, Gender = ?, LinkedIn = ? WHERE User_ID = ?', 
+      'UPDATE user SET Name = ?, DOB = ?, Gender = ?, LinkedIn = ? WHERE User_ID = ?', 
       [name, dob || null, gender || null, linkedin || null, req.user.id]
     );
     
     await db.query(
-      'UPDATE STUDENT SET Roll_No = ?, Department = ?, Start_Year = ?, End_Year = ? WHERE User_ID = ?',
+      'UPDATE student SET Roll_No = ?, Department = ?, Start_Year = ?, End_Year = ? WHERE User_ID = ?',
       [rollNo, department, startYear || null, endYear || null, req.user.id]
     );
 
@@ -49,8 +49,8 @@ router.get('/:id', authenticate, async (req, res) => {
     const [[student]] = await db.query(`
       SELECT u.User_ID, u.Name, u.Email, u.Profile_Pic, u.DOB, u.Gender, u.LinkedIn,
              s.Student_ID, s.Roll_No, s.Department, s.Start_Year, s.End_Year
-      FROM   USER u
-      JOIN   STUDENT s ON s.User_ID = u.User_ID
+      FROM   user u
+      JOIN   student s ON s.User_ID = u.User_ID
       WHERE  s.Student_ID = ?
     `, [req.params.id]);
 

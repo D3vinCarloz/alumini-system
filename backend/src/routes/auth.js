@@ -12,9 +12,9 @@ router.post('/login', async (req, res) => {
     if (!email || !password)
       return res.status(400).json({ message: 'Email and password are required' });
 
-    // 1. Find user in USER table
+    // 1. Find user in user table
     const [rows] = await db.query(
-      'SELECT * FROM USER WHERE Email = ?', [email]
+      'SELECT * FROM user WHERE Email = ?', [email]
     );
     const user = rows[0];
 
@@ -29,13 +29,13 @@ router.post('/login', async (req, res) => {
     // 3. Fetch sub-table ID (Student_ID or Alumni_ID)
     let subId = null;
     if (user.Role === 'student') {
-      const [[s]] = await db.query(
-        'SELECT Student_ID FROM STUDENT WHERE User_ID = ?', [user.User_ID]
+        const [[s]] = await db.query(
+        'SELECT Student_ID FROM student WHERE User_ID = ?', [user.User_ID]
       );
       subId = s?.Student_ID ?? null;
     } else if (user.Role === 'alumni') {
-      const [[a]] = await db.query(
-        'SELECT Alumni_ID FROM ALUMNI WHERE User_ID = ?', [user.User_ID]
+        const [[a]] = await db.query(
+        'SELECT Alumni_ID FROM alumni WHERE User_ID = ?', [user.User_ID]
       );
       subId = a?.Alumni_ID ?? null;
     }
@@ -84,7 +84,7 @@ router.post('/register', async (req, res) => {
     }
 
     // Check if email already exists
-    const [existing] = await db.query('SELECT User_ID FROM USER WHERE Email = ?', [email]);
+    const [existing] = await db.query('SELECT User_ID FROM user WHERE Email = ?', [email]);
     if (existing.length > 0) {
       return res.status(409).json({ message: 'An account with this email already exists' });
     }
@@ -95,7 +95,7 @@ router.post('/register', async (req, res) => {
 
     // Insert user
     const [result] = await db.query(
-      'INSERT INTO USER (Name, Email, Password, Role) VALUES (?, ?, ?, ?)',
+      'INSERT INTO user (Name, Email, Password, Role) VALUES (?, ?, ?, ?)',
       [name, email, hash, role]
     );
     const userId = result.insertId;
@@ -103,12 +103,12 @@ router.post('/register', async (req, res) => {
     // Insert sub-table record
     if (role === 'student') {
       await db.query(
-        'INSERT INTO STUDENT (User_ID, Roll_No, Department) VALUES (?, ?, ?)',
+        'INSERT INTO student (User_ID, Roll_No, Department) VALUES (?, ?, ?)',
         [userId, rollNo || '', department || '']
       );
     } else if (role === 'alumni') {
       await db.query(
-        `INSERT INTO ALUMNI (User_ID, Department, Graduation_Year, Batch, Contact_Info, Bio, Verification_Status, Status)
+        `INSERT INTO alumni (User_ID, Department, Graduation_Year, Batch, Contact_Info, Bio, Verification_Status, Status)
          VALUES (?, ?, ?, ?, '', '', FALSE, 'pending')`,
         [userId, department || '', graduationYear || null, batch || '']
       );
