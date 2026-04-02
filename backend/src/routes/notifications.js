@@ -44,7 +44,7 @@ router.patch('/:id/read', authenticate, async (req, res) => {
   }
 });
 
-// 👈 NEW: PUT /api/notifications/read-by-type — Silently clear notifications by category
+// PUT /api/notifications/read-by-type — Silently clear notifications by category
 router.put('/read-by-type', authenticate, async (req, res) => {
   try {
     const { types } = req.body;
@@ -55,8 +55,10 @@ router.put('/read-by-type', authenticate, async (req, res) => {
 
     const placeholders = types.map(() => '?').join(',');
     
+    // 🟢 FIXED: Changed TRUE to 1 for stricter MySQL compatibility
     await db.query(
       `UPDATE notifications SET Is_Read = TRUE WHERE User_ID = ? AND Type IN (${placeholders})`,
+      `UPDATE NOTIFICATIONS SET Is_Read = 1 WHERE User_ID = ? AND Type IN (${placeholders})`,
       [req.user.id, ...types]
     );
 
