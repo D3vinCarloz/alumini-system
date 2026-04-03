@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
-import { PageHero } from '../../components/layout/PageHero';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { MessageSquare, Briefcase, Clock, MessageCircle, CheckCircle } from 'lucide-react';
+import { MessageSquare, Briefcase, Clock, MessageCircle, CheckCircle, ArrowRight, PanelTopOpen } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Badge } from '../../components/ui/badge';
 import { Link } from 'react-router';
 import { apiFetch } from '../../lib/api';
 import { toast } from 'sonner';
 import { UserAvatar } from '../../components/UserAvatar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
+import { Button } from '../../components/ui/button';
 
 interface Query {
   Query_ID: number;
@@ -43,7 +44,7 @@ export function AlumniDashboard() {
           apiFetch<Job[]>('/jobs'),
         ]);
         setReceivedQueries(queriesData);
-        setJobsPosted(jobsData.filter(j => j.Alumni_ID === user?.subId).length);
+        setJobsPosted(jobsData.filter((j) => j.Alumni_ID === user?.subId).length);
       } catch (err) {
         console.error('Failed to load dashboard data:', err);
         toast.error('Failed to load dashboard data');
@@ -55,134 +56,171 @@ export function AlumniDashboard() {
     fetchAll();
   }, [user?.subId]);
 
-  const totalQueries   = receivedQueries.length;
-  const pendingQueries = receivedQueries.filter(q => q.isUnread).length;
+  const totalQueries = receivedQueries.length;
+  const pendingQueries = receivedQueries.filter((q) => q.isUnread).length;
+  const repliedQueries = Math.max(totalQueries - pendingQueries, 0);
 
   return (
     <DashboardLayout title="Alumni Dashboard">
       <div className="space-y-6">
-        <PageHero
-          eyebrow="Mentorship Hub"
-          title="Manage conversations and opportunities from one cleaner workspace."
-          description="Your dashboard opens with a stronger summary layer, so query load and job activity are immediately visible without the page feeling cramped."
-          stats={[
-            { label: 'Queries', value: loading ? '...' : totalQueries },
-            { label: 'Awaiting Reply', value: loading ? '...' : pendingQueries },
-            { label: 'Jobs Posted', value: loading ? '...' : jobsPosted },
-          ]}
-        />
+        <Card className="border-none">
+          <CardContent className="space-y-5 p-5 sm:p-6">
+            <div className="flex flex-col gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">Workspace Summary</p>
+                <h2 className="mt-2 text-2xl font-bold">Keep replies, jobs, and mentoring organized.</h2>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <CompactStat title="Total Queries" value={loading ? '...' : totalQueries} hint="All conversations" />
+                <CompactStat title="Awaiting Reply" value={loading ? '...' : pendingQueries} hint="Need attention" />
+                <CompactStat title="Jobs Posted" value={loading ? '...' : jobsPosted} hint="Active listings" />
+              </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          
-          {/* Link to Query Management */}
-          <Link to="/query-management" className="block outline-none">
-            <Card className="h-full relative overflow-hidden transition-all hover:shadow-md hover:-translate-y-0.5 cursor-pointer border-border/60 hover:border-border">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Total Queries Received</CardTitle>
-                <div className="rounded-lg p-1.5 bg-muted/50 text-muted-foreground">
-                  <MessageSquare className="size-4" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold tracking-tight text-primary">
-                  {loading ? '—' : totalQueries}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">Messages from students and alumni</p>
-                {!loading && pendingQueries > 0 && (
-                  <p className="text-xs text-amber-600 mt-2 font-medium flex items-center gap-1">
-                    <Clock className="size-3" /> {pendingQueries} awaiting your reply
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          </Link>
+              <Tabs defaultValue="overview" className="w-full">
+                <TabsList className="grid h-auto w-full grid-cols-3 rounded-2xl bg-muted/70 p-1 sm:w-[360px]">
+                  <TabsTrigger value="overview" className="rounded-xl py-2">Overview</TabsTrigger>
+                  <TabsTrigger value="queries" className="rounded-xl py-2">Queries</TabsTrigger>
+                  <TabsTrigger value="jobs" className="rounded-xl py-2">Jobs</TabsTrigger>
+                </TabsList>
 
-          {/* Link to Job Postings */}
-          <Link to="/job-postings" className="block outline-none">
-            <Card className="h-full relative overflow-hidden transition-all hover:shadow-md hover:-translate-y-0.5 cursor-pointer border-border/60 hover:border-border">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Jobs Posted</CardTitle>
-                <div className="rounded-lg p-1.5 bg-muted/50 text-muted-foreground">
-                  <Briefcase className="size-4" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold tracking-tight text-emerald-600">
-                  {loading ? '—' : jobsPosted}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">Active job postings</p>
-              </CardContent>
-            </Card>
-          </Link>
+                <TabsContent value="overview" className="mt-5 space-y-5">
+                  <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+                    <Card className="border-none bg-[#f7f4ee] shadow-none">
+                      <CardHeader className="flex flex-row items-center justify-between pb-3">
+                        <CardTitle className="text-base">Recent Queries</CardTitle>
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link to="/query-management">Open</Link>
+                        </Button>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        {renderQueryList(receivedQueries, loading, user?.role)}
+                      </CardContent>
+                    </Card>
 
-        </div>
+                    <Card className="border-none bg-[#f7f4ee] shadow-none">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base">Quick Actions</CardTitle>
+                      </CardHeader>
+                      <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                        <ActionLink to="/query-management" label="Open Query Management" />
+                        <ActionLink to="/job-postings" label="Manage Job Postings" />
+                        <ActionLink to="/career-management" label="Update Career Timeline" />
+                      </CardContent>
+                    </Card>
+                  </div>
+                </TabsContent>
 
-        {/* Recent Queries */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Queries</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {loading ? (
-                <p className="text-muted-foreground text-center py-8">Loading...</p>
-              ) : receivedQueries.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">
-                  No queries received yet.
-                </p>
-              ) : (
-                receivedQueries.map((query) => {
-                  const displayName = query.counterpartName || query.studentName || 'Conversation';
-                  
-                  // 👇 THE FIX: Logic correctly checks who sent the last message!
-                  const isWaitingForYou = (query.Latest_Sender_Role || 'student') !== user?.role;
+                <TabsContent value="queries" className="mt-5">
+                  <Card className="border-none">
+                    <CardHeader className="flex flex-row items-center justify-between pb-3">
+                      <CardTitle className="text-base">Conversation List</CardTitle>
+                      <Button variant="outline" size="sm" asChild>
+                        <Link to="/query-management">Go to Full Page</Link>
+                      </Button>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {renderQueryList(receivedQueries, loading, user?.role, true)}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
 
-                  return (
-                    <Link
-                      key={query.Thread_ID || String(query.Query_ID)}
-                      to={`/chat/${query.Thread_ID || query.Query_ID}`}
-                      className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${
-                        query.isUnread ? 'border-primary/50 bg-primary/5 hover:bg-primary/10' : 'border-border hover:bg-muted/50'
-                      }`}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3">
-                          <UserAvatar 
-                            profilePic={query.Profile_Pic} 
-                            name={displayName} 
-                            className="size-10 text-sm" 
-                          />
-                          <div className="flex flex-col">
-                            <div className="flex items-center gap-2">
-                              <p className="font-semibold text-foreground">{displayName}</p>
-                              <Badge variant={query.isUnread ? 'default' : 'secondary'} className="text-[10px] h-5 px-1.5">
-                                {query.isUnread ? (
-                                  <span className="flex items-center gap-1"><MessageCircle className="size-2" />New</span>
-                                ) : isWaitingForYou ? (
-                                  <span className="flex items-center gap-1 text-amber-600"><Clock className="size-2" />Needs Reply</span>
-                                ) : (
-                                  <span className="flex items-center gap-1 text-emerald-600"><CheckCircle className="size-2" />Replied</span>
-                                )}
-                              </Badge>
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              {new Date(query.Query_Date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                            </p>
-                          </div>
-                        </div>
-                        <p className={`text-sm mt-3 ml-[52px] truncate ${query.isUnread ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
-                          {query.Content}
-                        </p>
+                <TabsContent value="jobs" className="mt-5">
+                  <Card className="border-none">
+                    <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="text-sm font-semibold">Job postings are handled in a dedicated page.</p>
+                        <p className="mt-1 text-sm text-muted-foreground">Keep dashboard compact and open full management only when needed.</p>
                       </div>
-                    </Link>
-                  );
-                })
-              )}
+                      <Button asChild>
+                        <Link to="/job-postings">Open Job Postings</Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </Tabs>
             </div>
           </CardContent>
         </Card>
-
       </div>
     </DashboardLayout>
   );
+}
+
+function CompactStat({ title, value, hint }: { title: string; value: string | number; hint: string }) {
+  return (
+    <div className="rounded-[1.25rem] border border-border/70 bg-white/80 p-4">
+      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{title}</p>
+      <p className="mt-3 text-2xl font-bold text-foreground">{value}</p>
+      <p className="mt-1 text-sm text-muted-foreground">{hint}</p>
+    </div>
+  );
+}
+
+function ActionLink({ to, label }: { to: string; label: string }) {
+  return (
+    <Link
+      to={to}
+      className="flex items-center justify-between rounded-[1.25rem] border border-border/70 bg-white/75 px-4 py-4 transition-colors hover:bg-white"
+    >
+      <span className="text-sm font-medium">{label}</span>
+      <ArrowRight className="size-4 text-muted-foreground" />
+    </Link>
+  );
+}
+
+function renderQueryList(
+  receivedQueries: Query[],
+  loading: boolean,
+  userRole?: 'student' | 'alumni' | 'admin',
+  roomy = false,
+) {
+  if (loading) {
+    return <p className="py-8 text-center text-sm text-muted-foreground">Loading...</p>;
+  }
+
+  if (receivedQueries.length === 0) {
+    return <p className="py-8 text-center text-sm text-muted-foreground">No queries received yet.</p>;
+  }
+
+  return receivedQueries.slice(0, roomy ? receivedQueries.length : 5).map((query) => {
+    const displayName = query.counterpartName || query.studentName || 'Conversation';
+    const isWaitingForYou = (query.Latest_Sender_Role || 'student') !== userRole;
+
+    return (
+      <Link
+        key={query.Thread_ID || String(query.Query_ID)}
+        to={`/chat/${query.Thread_ID || query.Query_ID}`}
+        className={`flex items-center justify-between gap-3 rounded-[1.25rem] border p-4 transition-colors ${
+          query.isUnread ? 'border-primary/40 bg-primary/5 hover:bg-primary/10' : 'border-border/70 hover:bg-muted/40'
+        }`}
+      >
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-3">
+            <UserAvatar profilePic={query.Profile_Pic} name={displayName} className="size-10 text-sm" />
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="truncate font-semibold text-foreground">{displayName}</p>
+                <Badge variant={query.isUnread ? 'default' : 'secondary'} className="h-5 px-1.5 text-[10px]">
+                  {query.isUnread ? (
+                    <span className="flex items-center gap-1"><MessageCircle className="size-2" />New</span>
+                  ) : isWaitingForYou ? (
+                    <span className="flex items-center gap-1 text-amber-600"><Clock className="size-2" />Needs Reply</span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-emerald-600"><CheckCircle className="size-2" />Replied</span>
+                  )}
+                </Badge>
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {new Date(query.Query_Date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+              </p>
+            </div>
+          </div>
+          <p className={`mt-3 truncate pl-[52px] text-sm ${query.isUnread ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>
+            {query.Content}
+          </p>
+        </div>
+        <PanelTopOpen className="hidden size-4 shrink-0 text-muted-foreground sm:block" />
+      </Link>
+    );
+  });
 }

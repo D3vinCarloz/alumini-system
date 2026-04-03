@@ -23,7 +23,7 @@ interface NavItem {
   roles: UserRole[];
 }
 
-const navItems: NavItem[] = [
+export const navItems: NavItem[] = [
   { label: 'Dashboard', icon: <LayoutDashboard className="size-5" />, path: '/dashboard', roles: ['student', 'alumni', 'admin'] },
   { label: 'Search Alumni', icon: <Search className="size-5" />, path: '/search-alumni', roles: ['student', 'alumni'] },
   { label: 'My Queries', icon: <MessageSquare className="size-5" />, path: '/my-queries', roles: ['student'] },
@@ -38,7 +38,7 @@ const navItems: NavItem[] = [
   { label: 'Events', icon: <CalendarDays className="size-5" />, path: '/events', roles: ['student', 'alumni', 'admin'] },
 ];
 
-export function Sidebar() {
+export function SidebarContent({ mobile = false, onNavigate }: { mobile?: boolean; onNavigate?: () => void }) {
   const { user } = useAuth();
   const location = useLocation();
   const [profilePic, setProfilePic] = useState<string | null>(null);
@@ -74,70 +74,85 @@ export function Sidebar() {
         : null;
 
   return (
-    <aside className="sticky top-0 hidden h-screen w-72 shrink-0 flex-col p-4 lg:flex">
-      <div className="flex h-full flex-col rounded-[2rem] border border-sidebar-border/80 bg-sidebar/85 shadow-[0_30px_60px_rgba(24,59,91,0.08)] backdrop-blur-xl">
-        <div className="border-b border-sidebar-border/80 p-6">
-          <div className="inline-flex items-center gap-3 rounded-full border border-primary/10 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-primary">
-            <span className="size-2 rounded-full bg-emerald-500" />
-            Original Campus Network
-          </div>
-          <h2 className="mt-4 text-2xl font-semibold text-primary">Alumni Network</h2>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Thoughtful connections between students, mentors, careers, and campus moments.
-          </p>
+    <div className={cn(
+      'flex h-full flex-col rounded-[2rem] border border-sidebar-border/80 bg-sidebar/85 shadow-[0_30px_60px_rgba(24,59,91,0.08)] backdrop-blur-xl',
+      mobile && 'rounded-none border-none shadow-none'
+    )}>
+      <div className="border-b border-sidebar-border/80 p-6">
+        <div className="inline-flex items-center gap-3 rounded-full border border-primary/10 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-primary">
+          <span className="size-2 rounded-full bg-emerald-500" />
+          Original Campus Network
         </div>
+        <h2 className="mt-4 text-2xl font-semibold text-primary">Alumni Network</h2>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+          Thoughtful connections between students, mentors, careers, and campus moments.
+        </p>
+      </div>
 
-        <nav className="flex-1 space-y-1 overflow-y-auto p-4">
-          {filteredNavItems.map((item) => {
-            const isActive = location.pathname === item.path;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
+      <nav className="flex-1 space-y-1 overflow-y-auto p-4">
+        {filteredNavItems.map((item) => {
+          const isActive = location.pathname === item.path;
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              onClick={onNavigate}
+              className={cn(
+                'group flex items-center gap-3 rounded-2xl px-4 py-3 transition-all',
+                isActive
+                  ? 'bg-primary text-primary-foreground shadow-[0_14px_30px_rgba(24,59,91,0.22)]'
+                  : 'text-foreground hover:bg-sidebar-accent'
+              )}
+            >
+              <span
                 className={cn(
-                  'group flex items-center gap-3 rounded-2xl px-4 py-3 transition-all',
-                  isActive
-                    ? 'bg-primary text-primary-foreground shadow-[0_14px_30px_rgba(24,59,91,0.22)]'
-                    : 'text-foreground hover:bg-sidebar-accent'
+                  'flex size-10 items-center justify-center rounded-xl transition-colors',
+                  isActive ? 'bg-white/12' : 'bg-white/70 text-primary group-hover:bg-white'
                 )}
               >
-                <span
-                  className={cn(
-                    'flex size-10 items-center justify-center rounded-xl transition-colors',
-                    isActive ? 'bg-white/12' : 'bg-white/70 text-primary group-hover:bg-white'
-                  )}
-                >
-                  {item.icon}
-                </span>
-                <span className="font-medium">{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
-
-        <div className="border-t border-sidebar-border/80 p-4">
-          {profilePath ? (
-            <Link
-              to={profilePath}
-              className="flex items-center gap-3 rounded-[1.5rem] bg-white/75 px-4 py-3 transition-colors hover:bg-white"
-            >
-              <UserAvatar profilePic={profilePic} name={user.name} className="size-10 text-xs" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold">{user.name}</p>
-                <p className="text-xs capitalize text-muted-foreground">{user.role}</p>
-              </div>
+                {item.icon}
+              </span>
+              <span className="font-medium">{item.label}</span>
             </Link>
-          ) : (
-            <div className="flex items-center gap-3 rounded-[1.5rem] bg-white/75 px-4 py-3">
-              <UserAvatar profilePic={profilePic} name={user.name} className="size-10 text-xs" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold">{user.name}</p>
-                <p className="text-xs capitalize text-muted-foreground">{user.role}</p>
-              </div>
+          );
+        })}
+      </nav>
+
+      <div className="border-t border-sidebar-border/80 p-4">
+        {profilePath ? (
+          <Link
+            to={profilePath}
+            onClick={onNavigate}
+            className="flex items-center gap-3 rounded-[1.5rem] bg-white/75 px-4 py-3 transition-colors hover:bg-white"
+          >
+            <UserAvatar profilePic={profilePic} name={user.name} className="size-10 text-xs" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold">{user.name}</p>
+              <p className="text-xs capitalize text-muted-foreground">{user.role}</p>
             </div>
-          )}
-        </div>
+          </Link>
+        ) : (
+          <div className="flex items-center gap-3 rounded-[1.5rem] bg-white/75 px-4 py-3">
+            <UserAvatar profilePic={profilePic} name={user.name} className="size-10 text-xs" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold">{user.name}</p>
+              <p className="text-xs capitalize text-muted-foreground">{user.role}</p>
+            </div>
+          </div>
+        )}
       </div>
+    </div>
+  );
+}
+
+export function Sidebar() {
+  const { user } = useAuth();
+
+  if (!user) return null;
+
+  return (
+    <aside className="sticky top-0 hidden h-screen w-72 shrink-0 flex-col p-4 lg:flex">
+      <SidebarContent />
     </aside>
   );
 }

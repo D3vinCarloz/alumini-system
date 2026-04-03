@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
-import { PageHero } from '../../components/layout/PageHero';
 import { Card, CardContent } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
-import { ArrowRight, Briefcase, Calendar, GraduationCap, MapPin, Search, Sparkles, Users } from 'lucide-react';
+import { ArrowRight, Briefcase, Calendar, GraduationCap, MapPin, Search, SlidersHorizontal, Users } from 'lucide-react';
 import { Link } from 'react-router';
 import { apiFetch } from '../../lib/api';
 import { toast } from 'sonner';
@@ -60,31 +59,26 @@ export function SearchAlumni() {
   return (
     <DashboardLayout title="Search Alumni">
       <div className="space-y-6">
-        <PageHero
-          eyebrow="Discovery"
-          title="Find alumni through a richer, easier-to-scan directory."
-          description="Browse verified alumni with spacious cards, layered profile previews, and cleaner filters so the page feels more like a real networking website than a plain table."
-          stats={[
-            { label: 'Verified Alumni', value: verifiedAlumni.length },
-            { label: 'Departments', value: Math.max(departments.length - 1, 0) },
-            { label: 'Visible Results', value: loading ? '...' : filteredAlumni.length },
-          ]}
-        >
-          <div className="space-y-2">
-            <p className="text-xs uppercase tracking-[0.2em] text-white/60">How it works</p>
-            <p className="leading-6">
-              Each smaller profile card opens a richer preview first, so we avoid cramming everything into one page while still keeping full profile access one click away.
-            </p>
-          </div>
-        </PageHero>
-
         <Card className="border-none">
-          <CardContent className="space-y-4 p-6">
-            <div className="grid gap-4 lg:grid-cols-[1.4fr_0.7fr_0.7fr_auto]">
+          <CardContent className="space-y-5 p-5 sm:p-6">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">Directory</p>
+                <h2 className="mt-2 text-2xl font-bold">Search Alumni</h2>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[430px]">
+                <MiniStat title="Verified" value={loading ? '...' : verifiedAlumni.length} />
+                <MiniStat title="Departments" value={loading ? '...' : Math.max(departments.length - 1, 0)} />
+                <MiniStat title="Results" value={loading ? '...' : filteredAlumni.length} />
+              </div>
+            </div>
+
+            <div className="grid gap-4 xl:grid-cols-[1.5fr_0.75fr_0.75fr_auto]">
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Search by name or department..."
+                  placeholder="Search by name or department"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="h-12 rounded-2xl border-border/70 bg-input-background pl-11"
@@ -93,7 +87,7 @@ export function SearchAlumni() {
 
               <Select value={department} onValueChange={setDepartment}>
                 <SelectTrigger className="h-12 rounded-2xl border-border/70 bg-input-background">
-                  <SelectValue placeholder="Filter by department" />
+                  <SelectValue placeholder="Department" />
                 </SelectTrigger>
                 <SelectContent>
                   {departments.map((dept) => (
@@ -106,7 +100,7 @@ export function SearchAlumni() {
 
               <Select value={batch} onValueChange={setBatch}>
                 <SelectTrigger className="h-12 rounded-2xl border-border/70 bg-input-background">
-                  <SelectValue placeholder="Filter by batch" />
+                  <SelectValue placeholder="Batch" />
                 </SelectTrigger>
                 <SelectContent>
                   {batches.map((b) => (
@@ -130,13 +124,20 @@ export function SearchAlumni() {
               </Button>
             </div>
 
-            {!loading && (
-              <div className="grid gap-3 sm:grid-cols-3">
-                <InsightCard icon={Users} label="Search Space" value={`${verifiedAlumni.length} alumni`} />
-                <InsightCard icon={Sparkles} label="Current Filter" value={department === 'all' ? 'All departments' : department} />
-                <InsightCard icon={GraduationCap} label="Result Count" value={`${filteredAlumni.length} matches`} />
-              </div>
-            )}
+            <div className="flex flex-wrap items-center gap-3 rounded-[1.25rem] bg-[#f7f4ee] px-4 py-3 text-sm text-muted-foreground">
+              <SlidersHorizontal className="size-4" />
+              {loading ? (
+                <span>Loading filters...</span>
+              ) : (
+                <>
+                  <span>{department === 'all' ? 'All departments' : department}</span>
+                  <span className="text-border">•</span>
+                  <span>{batch === 'all' ? 'All batches' : `Batch ${batch}`}</span>
+                  <span className="text-border">•</span>
+                  <span>{`${filteredAlumni.length} result${filteredAlumni.length === 1 ? '' : 's'}`}</span>
+                </>
+              )}
+            </div>
           </CardContent>
         </Card>
 
@@ -145,7 +146,7 @@ export function SearchAlumni() {
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <Card key={i}>
                 <CardContent className="space-y-4 p-6">
-                  <div className="h-32 animate-pulse rounded-[1.5rem] bg-muted" />
+                  <div className="h-28 animate-pulse rounded-[1.5rem] bg-muted" />
                   <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
                   <div className="h-3 w-1/2 animate-pulse rounded bg-muted" />
                   <div className="h-10 animate-pulse rounded-full bg-muted" />
@@ -159,77 +160,70 @@ export function SearchAlumni() {
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
             {filteredAlumni.map((alumni) => (
               <Card key={alumni.Alumni_ID} className="group overflow-hidden border-none">
-                <div className="h-28 bg-[linear-gradient(135deg,rgba(24,59,91,0.96),rgba(31,122,109,0.84))]" />
+                <div className="h-20 bg-[linear-gradient(135deg,rgba(24,59,91,0.96),rgba(31,122,109,0.84))]" />
                 <CardContent className="relative space-y-5 p-6">
-                  <div className="-mt-14 flex items-start gap-4">
+                  <div className="-mt-11 flex items-start gap-4">
                     <UserAvatar
                       profilePic={alumni.Profile_Pic}
                       name={alumni.Name}
-                      className="size-16 border-4 border-white text-base shadow-md"
+                      className="size-14 border-4 border-white text-sm shadow-md"
                     />
-                    <div className="min-w-0 flex-1 pt-10">
+                    <div className="min-w-0 flex-1 pt-7">
                       <h3 className="truncate text-lg font-semibold">{alumni.Name}</h3>
                       <p className="mt-1 text-sm text-muted-foreground">{alumni.Department || 'Department not set'}</p>
                     </div>
                   </div>
 
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="flex flex-wrap gap-2">
                     <MetaPill icon={Calendar} text={alumni.Graduation_Year ? `Class of ${alumni.Graduation_Year}` : 'Year not set'} />
                     <MetaPill icon={Briefcase} text={alumni.Batch ? `Batch ${alumni.Batch}` : 'Batch not set'} />
                   </div>
 
-                  <p className="line-clamp-3 text-sm leading-6 text-muted-foreground">
-                    {alumni.Bio || 'This alumni profile is verified and available to connect with, but their bio has not been added yet.'}
+                  <p className="line-clamp-2 text-sm leading-6 text-muted-foreground">
+                    {alumni.Bio || 'Profile available.'}
                   </p>
 
                   <div className="flex gap-3">
                     <Dialog>
                       <DialogTrigger asChild>
-                        <Button variant="outline" className="flex-1">
-                          Quick Preview
-                        </Button>
+                        <Button variant="outline" className="flex-1">Preview</Button>
                       </DialogTrigger>
                       <DialogContent className="max-w-2xl rounded-[2rem] border-none bg-[#fffdf8] p-0 shadow-[0_35px_90px_rgba(24,59,91,0.18)]">
-                        <div className="h-36 bg-[linear-gradient(135deg,rgba(24,59,91,0.96),rgba(31,122,109,0.84))]" />
+                        <div className="h-28 bg-[linear-gradient(135deg,rgba(24,59,91,0.96),rgba(31,122,109,0.84))]" />
                         <div className="space-y-6 p-7">
                           <DialogHeader className="space-y-3 text-left">
-                            <div className="-mt-20 flex items-end gap-4">
+                            <div className="-mt-16 flex items-end gap-4">
                               <UserAvatar
                                 profilePic={alumni.Profile_Pic}
                                 name={alumni.Name}
-                                className="size-24 border-4 border-white text-xl shadow-lg"
+                                className="size-20 border-4 border-white text-lg shadow-lg"
                               />
-                              <div className="pb-2 text-white">
-                                <DialogTitle className="text-2xl font-bold text-white">{alumni.Name}</DialogTitle>
-                                <p className="mt-1 text-sm text-white/75">{alumni.Department || 'Department not set'}</p>
+                              <div>
+                                <DialogTitle className="text-2xl font-bold">{alumni.Name}</DialogTitle>
+                                <p className="mt-1 text-sm text-muted-foreground">{alumni.Department || 'Department not set'}</p>
                               </div>
                             </div>
                           </DialogHeader>
 
                           <div className="grid gap-4 md:grid-cols-3">
-                            <InsightCard icon={Calendar} label="Graduation" value={alumni.Graduation_Year || 'Not set'} />
-                            <InsightCard icon={Users} label="Batch" value={alumni.Batch || 'Not set'} />
-                            <InsightCard icon={MapPin} label="Visibility" value="Verified" />
+                            <PreviewStat icon={Calendar} label="Graduation" value={alumni.Graduation_Year || 'Not set'} />
+                            <PreviewStat icon={Users} label="Batch" value={alumni.Batch || 'Not set'} />
+                            <PreviewStat icon={MapPin} label="Status" value="Verified" />
                           </div>
 
-                          <Card className="border-none bg-[#f7f4ee] shadow-none">
-                            <CardContent className="space-y-2 p-5">
-                              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Profile Summary</p>
-                              <p className="text-sm leading-7 text-foreground/80">
-                                {alumni.Bio || 'This profile is ready for connection. Open the full profile to view deeper details and continue the conversation flow.'}
-                              </p>
-                            </CardContent>
-                          </Card>
+                          <div className="rounded-[1.25rem] bg-[#f7f4ee] px-5 py-4 text-sm text-muted-foreground">
+                            {alumni.Bio || 'Open the full profile for details.'}
+                          </div>
 
                           <div className="flex flex-col gap-3 sm:flex-row">
                             <Link to={`/alumni/${alumni.Alumni_ID}`} className="flex-1">
                               <Button className="w-full">
-                                Open Full Profile
+                                View Profile
                                 <ArrowRight className="size-4" />
                               </Button>
                             </Link>
                             <Button variant="outline" className="flex-1" asChild>
-                              <Link to={`/alumni/${alumni.Alumni_ID}`}>Send Query From Profile</Link>
+                              <Link to={`/alumni/${alumni.Alumni_ID}`}>Open</Link>
                             </Button>
                           </div>
                         </div>
@@ -254,10 +248,7 @@ export function SearchAlumni() {
             <CardContent className="py-16 text-center">
               <GraduationCap className="mx-auto mb-4 size-14 text-muted-foreground" />
               <p className="text-lg font-semibold">
-                {verifiedAlumni.length === 0 ? 'No verified alumni available yet.' : 'No alumni matched your filters.'}
-              </p>
-              <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted-foreground">
-                Try widening the search, clearing filters, or returning later after more alumni profiles are verified.
+                {verifiedAlumni.length === 0 ? 'No verified alumni yet.' : 'No results found.'}
               </p>
               <Button
                 variant="outline"
@@ -278,9 +269,18 @@ export function SearchAlumni() {
   );
 }
 
-function InsightCard({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string | number }) {
+function MiniStat({ title, value }: { title: string; value: string | number }) {
   return (
-    <div className="rounded-[1.5rem] border border-border/70 bg-[#fbfaf7] p-4">
+    <div className="rounded-[1.25rem] border border-border/70 bg-white/80 px-4 py-3">
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">{title}</p>
+      <p className="mt-2 text-2xl font-bold text-foreground">{value}</p>
+    </div>
+  );
+}
+
+function PreviewStat({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string | number }) {
+  return (
+    <div className="rounded-[1.25rem] border border-border/70 bg-white/80 p-4">
       <div className="flex items-center gap-3">
         <div className="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
           <Icon className="size-4" />

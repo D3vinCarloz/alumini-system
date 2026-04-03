@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
-import { LogOut, Bell, Sparkles } from 'lucide-react';
+import { LogOut, Bell, Sparkles, PanelLeft } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, Link, useLocation } from 'react-router';
 import { apiFetch } from '../../lib/api';
 import { Button } from '../ui/button';
+import { SidebarContent } from './Sidebar';
 import {
   Dialog,
   DialogContent,
@@ -12,6 +13,14 @@ import {
   DialogDescription,
   DialogTrigger,
 } from '../ui/dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '../ui/sheet';
 
 export function Header({ title }: { title: string }) {
   const { user, logout } = useAuth();
@@ -19,6 +28,7 @@ export function Header({ title }: { title: string }) {
   const location = useLocation();
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
   const fetchCount = useCallback(async () => {
     if (!localStorage.getItem('token')) return;
@@ -51,12 +61,29 @@ export function Header({ title }: { title: string }) {
   return (
     <header className="sticky top-0 z-50 px-4 pt-4 sm:px-6 lg:px-8">
       <div className="mx-auto flex max-w-7xl items-center justify-between rounded-[1.75rem] border border-border/70 bg-white/72 px-4 py-3 shadow-[0_10px_45px_rgba(24,59,91,0.08)] backdrop-blur-xl sm:px-5">
-        <div className="min-w-0">
+        <div className="flex min-w-0 items-center gap-3">
+          <Sheet open={isMobileNavOpen} onOpenChange={setIsMobileNavOpen}>
+            <SheetTrigger asChild>
+              <button className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/70 bg-white/80 lg:hidden">
+                <PanelLeft className="size-4" />
+              </button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[88%] max-w-sm border-none bg-[#fbf8f1] p-0">
+              <SheetHeader className="sr-only">
+                <SheetTitle>Navigation</SheetTitle>
+                <SheetDescription>Open website navigation</SheetDescription>
+              </SheetHeader>
+              <SidebarContent mobile onNavigate={() => setIsMobileNavOpen(false)} />
+            </SheetContent>
+          </Sheet>
+
+          <div className="min-w-0">
           <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
             <Sparkles className="size-3.5" />
             Experience Layer
           </p>
           <h1 className="truncate text-xl font-bold">{title}</h1>
+          </div>
         </div>
 
         <div className="flex items-center gap-4">
@@ -71,7 +98,7 @@ export function Header({ title }: { title: string }) {
             </div>
           </Link>
 
-          <div className="flex items-center gap-3 border-l border-border pl-4">
+          <div className="flex items-center gap-3 border-l border-border pl-3 sm:pl-4">
             <div className="hidden text-right sm:block">
               <p className="text-sm font-semibold">{user?.name}</p>
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{user?.role}</p>
