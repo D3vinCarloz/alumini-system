@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors    = require('cors');
 const path    = require('path');
+const { ensureSchema } = require('./config/ensureSchema');
 
 const app = express();
 
@@ -34,6 +35,15 @@ app.use((err, _req, res, _next) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () =>
-  console.log(`Backend running at http://localhost:${PORT}`)
-);
+
+ensureSchema()
+  .then(() => {
+    app.listen(PORT, () =>
+      console.log(`Backend running at http://localhost:${PORT}`)
+    );
+  })
+  .catch((err) => {
+    console.error('Failed to initialize database schema');
+    console.error(err);
+    process.exit(1);
+  });

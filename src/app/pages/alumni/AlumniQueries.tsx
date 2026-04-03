@@ -6,14 +6,16 @@ import { Link } from 'react-router';
 import { MessageSquare } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import { toast } from 'sonner';
-import { UserAvatar } from '../../components/UserAvatar'; // 👈 IMPORT ADDED
+import { UserAvatar } from '../../components/UserAvatar';
 
 interface Query {
   Query_ID: number;
-  studentName: string;
-  Profile_Pic?: string | null; // 👈 ADDED
+  Thread_ID: string;
+  counterpartName: string;
+  counterpartRole: 'student' | 'alumni';
+  Profile_Pic?: string | null;
   Content: string;
-  Status: 'pending' | 'answered';
+  Status: string;
   Query_Date: string;
 }
 
@@ -26,7 +28,6 @@ export function AlumniQueries() {
     const day = String(date.getDate()).padStart(2, '0');
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = date.getFullYear();
-
     return `${day}-${month}-${year}`;
   };
 
@@ -45,7 +46,7 @@ export function AlumniQueries() {
       <Card>
         <CardHeader>
           <CardTitle>
-            All Received Queries
+            Conversations
             {!loading && (
               <span className="ml-2 text-sm font-normal text-muted-foreground">
                 ({receivedQueries.length} total)
@@ -58,63 +59,61 @@ export function AlumniQueries() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border">
-                  <th className="text-left py-3 px-4 font-medium">Student</th>
-                  <th className="text-left py-3 px-4 font-medium">My Reply</th>
-                  <th className="text-left py-3 px-4 font-medium">Status</th>
-                  <th className="text-left py-3 px-4 font-medium">Date</th>
-                  <th className="text-left py-3 px-4 font-medium">Action</th>
+                  <th className="px-4 py-3 text-left font-medium">Person</th>
+                  <th className="px-4 py-3 text-left font-medium">Latest Message</th>
+                  <th className="px-4 py-3 text-left font-medium">Type</th>
+                  <th className="px-4 py-3 text-left font-medium">Status</th>
+                  <th className="px-4 py-3 text-left font-medium">Date</th>
+                  <th className="px-4 py-3 text-left font-medium">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={5} className="text-center py-12 text-muted-foreground">
+                    <td colSpan={6} className="py-12 text-center text-muted-foreground">
                       Loading...
                     </td>
                   </tr>
                 ) : receivedQueries.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="text-center py-12 text-muted-foreground">
-                      No queries received yet.
+                    <td colSpan={6} className="py-12 text-center text-muted-foreground">
+                      No conversations yet.
                     </td>
                   </tr>
                 ) : (
                   receivedQueries.map((query) => (
-                    <tr
-                      key={query.Query_ID}
-                      className="border-b border-border hover:bg-secondary/50"
-                    >
-                      {/* 👈 UPDATED COLUMN: Flex container with UserAvatar */}
-                      <td className="py-4 px-4">
+                    <tr key={query.Thread_ID} className="border-b border-border hover:bg-secondary/50">
+                      <td className="px-4 py-4">
                         <div className="flex items-center gap-3">
-                          <UserAvatar 
-                            profilePic={query.Profile_Pic} 
-                            name={query.studentName} 
-                            className="size-8 text-xs" 
+                          <UserAvatar
+                            profilePic={query.Profile_Pic}
+                            name={query.counterpartName}
+                            className="size-8 text-xs"
                           />
-                          <span className="font-medium">{query.studentName}</span>
+                          <span className="font-medium">{query.counterpartName}</span>
                         </div>
                       </td>
-                      <td className="py-4 px-4 max-w-md">
-                        <p className="truncate text-muted-foreground">
-                          {query.Content}
-                        </p>
+                      <td className="max-w-md px-4 py-4">
+                        <p className="truncate text-muted-foreground">{query.Content}</p>
                       </td>
-                      <td className="py-4 px-4">
-                        <Badge variant={query.Status === 'answered' ? 'default' : 'secondary'}>
+                      <td className="px-4 py-4">
+                        <Badge variant="outline">{query.counterpartRole}</Badge>
+                      </td>
+                      <td className="px-4 py-4">
+                        <Badge variant={query.Status === 'unread' ? 'default' : 'secondary'}>
                           {query.Status}
                         </Badge>
                       </td>
-                      <td className="py-4 px-4 text-muted-foreground">
+                      <td className="px-4 py-4 text-muted-foreground">
                         {formatDate(query.Query_Date)}
                       </td>
-                      <td className="py-4 px-4">
+                      <td className="px-4 py-4">
                         <Link
-                          to={`/chat/${query.Query_ID}`}
-                          className="text-primary hover:underline flex items-center gap-2"
+                          to={`/chat/${query.Thread_ID}`}
+                          className="flex items-center gap-2 text-primary hover:underline"
                         >
                           <MessageSquare className="size-4" />
-                          {query.Status === 'pending' ? 'Reply' : 'View Chat'}
+                          Open Chat
                         </Link>
                       </td>
                     </tr>

@@ -11,9 +11,11 @@ import { UserAvatar } from '../../components/UserAvatar';
 
 interface Query {
   Query_ID: number;
-  studentName: string;
+  Thread_ID: string;
+  studentName?: string;
+  counterpartName?: string;
+  counterpartRole?: 'student' | 'alumni';
   Profile_Pic?: string | null;
-  alumniName: string;
   Content: string;
   Status: string;
   isUnread: boolean;
@@ -53,8 +55,7 @@ export function AlumniDashboard() {
   }, [user?.subId]);
 
   const totalQueries   = receivedQueries.length;
-  // Pending if the student sent the last message (or if it's unread)
-  const pendingQueries = receivedQueries.filter(q => q.Latest_Sender_Role === 'student' || !q.Latest_Sender_Role).length;
+  const pendingQueries = receivedQueries.filter(q => q.isUnread).length;
 
   return (
     <DashboardLayout title="Alumni Dashboard">
@@ -76,7 +77,7 @@ export function AlumniDashboard() {
                 <div className="text-3xl font-bold tracking-tight text-primary">
                   {loading ? '—' : totalQueries}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">Questions from students</p>
+                <p className="text-xs text-muted-foreground mt-1">Messages from students and alumni</p>
                 {!loading && pendingQueries > 0 && (
                   <p className="text-xs text-amber-600 mt-2 font-medium flex items-center gap-1">
                     <Clock className="size-3" /> {pendingQueries} awaiting your reply
@@ -121,12 +122,13 @@ export function AlumniDashboard() {
                 </p>
               ) : (
                 receivedQueries.map((query) => {
-                  const isWaitingForYou = query.Latest_Sender_Role === 'student' || !query.Latest_Sender_Role;
+                  const displayName = query.counterpartName || query.studentName || 'Conversation';
+                  const isWaitingForYou = query.isUnread;
 
                   return (
                     <Link
-                      key={query.Query_ID}
-                      to={`/chat/${query.Query_ID}`}
+                      key={query.Thread_ID || String(query.Query_ID)}
+                      to={`/chat/${query.Thread_ID || query.Query_ID}`}
                       className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${
                         query.isUnread ? 'border-primary/50 bg-primary/5 hover:bg-primary/10' : 'border-border hover:bg-muted/50'
                       }`}
@@ -135,12 +137,12 @@ export function AlumniDashboard() {
                         <div className="flex items-center gap-3">
                           <UserAvatar 
                             profilePic={query.Profile_Pic} 
-                            name={query.studentName} 
+                            name={displayName} 
                             className="size-10 text-sm" 
                           />
                           <div className="flex flex-col">
                             <div className="flex items-center gap-2">
-                              <p className="font-semibold text-foreground">{query.studentName}</p>
+                              <p className="font-semibold text-foreground">{displayName}</p>
                               <Badge variant={query.isUnread ? 'default' : 'secondary'} className="text-[10px] h-5 px-1.5">
                                 {query.isUnread ? (
                                   <span className="flex items-center gap-1"><MessageCircle className="size-2" />New</span>

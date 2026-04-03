@@ -35,7 +35,7 @@ const navItems: NavItem[] = [
     label: 'Search Alumni',
     icon: <Search className="size-5" />,
     path: '/search-alumni',
-    roles: ['student'],
+    roles: ['student', 'alumni'],
   },
   {
     label: 'My Queries',
