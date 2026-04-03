@@ -64,8 +64,9 @@ export function Header({ title }: { title: string }) {
         <div className="flex min-w-0 items-center gap-3">
           <Sheet open={isMobileNavOpen} onOpenChange={setIsMobileNavOpen}>
             <SheetTrigger asChild>
-              <button className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/70 bg-white/80 lg:hidden">
+              <button className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-border/70 bg-white/90 px-4 text-sm font-semibold text-foreground shadow-sm lg:hidden">
                 <PanelLeft className="size-4" />
+                <span>Menu</span>
               </button>
             </SheetTrigger>
             <SheetContent side="left" className="w-[88%] max-w-sm border-none bg-[#fbf8f1] p-0">

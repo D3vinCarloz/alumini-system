@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { DashboardLayout } from '../components/layout/DashboardLayout';
-import { PageHero } from '../components/layout/PageHero';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { BellOff, MessageSquare, Trash2 } from 'lucide-react';
@@ -70,16 +69,22 @@ export function NotificationsPage() {
   return (
     <DashboardLayout title="Notifications">
       <div className="space-y-6">
-        <PageHero
-          eyebrow="Inbox"
-          title="Notifications now feel like a dedicated message center."
-          description="Important updates are separated with clearer hierarchy, stronger read states, and more breathing room so this page feels intentional instead of flat."
-          stats={[
-            { label: 'Total', value: loading ? '...' : notifications.length },
-            { label: 'Unread', value: loading ? '...' : unreadCount },
-            { label: 'Read', value: loading ? '...' : Math.max(notifications.length - unreadCount, 0) },
-          ]}
-        />
+        <Card className="border-none">
+          <CardContent className="space-y-5 p-5 sm:p-6">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">Inbox</p>
+                <h2 className="mt-2 text-2xl font-bold">Notifications</h2>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[430px]">
+                <MiniStat title="Total" value={loading ? '...' : notifications.length} />
+                <MiniStat title="Unread" value={loading ? '...' : unreadCount} />
+                <MiniStat title="Read" value={loading ? '...' : Math.max(notifications.length - unreadCount, 0)} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="mx-auto max-w-4xl">
           <Card className="overflow-hidden border-none">
@@ -94,9 +99,6 @@ export function NotificationsPage() {
                 <div className="p-20 text-center">
                   <BellOff className="mx-auto mb-4 size-14 opacity-30" />
                   <p className="text-lg font-semibold">No notifications yet</p>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    When new replies, events, or updates arrive, they will appear here.
-                  </p>
                 </div>
               ) : (
                 <div className="space-y-4 p-4 md:p-6">
@@ -147,5 +149,14 @@ export function NotificationsPage() {
         </div>
       </div>
     </DashboardLayout>
+  );
+}
+
+function MiniStat({ title, value }: { title: string; value: string | number }) {
+  return (
+    <div className="rounded-[1.25rem] border border-border/70 bg-white/80 px-4 py-3">
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">{title}</p>
+      <p className="mt-2 text-2xl font-bold text-foreground">{value}</p>
+    </div>
   );
 }
