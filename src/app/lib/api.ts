@@ -98,8 +98,7 @@
 // }
 /// <reference types="vite/client" />
 
-// 🔥 1. The Smart URL Router for API Fetching
-// Defaults to your local backend port 5000 during development.
+// Ensure VITE_API_URL is read safely
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // Remove trailing slash if present to prevent double slashes
