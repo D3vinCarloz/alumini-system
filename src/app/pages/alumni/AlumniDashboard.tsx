@@ -61,10 +61,10 @@ export function AlumniDashboard() {
     <DashboardLayout title="Alumni Dashboard">
       <div className="space-y-6">
 
-        {/* 👈 UPDATED: Stats Cards are now Clickable Links */}
+        {/* Stats Cards are now Clickable Links */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           
-          {/* Link to Query Management (Update the 'to' path if your route is named differently, like '/my-queries') */}
+          {/* Link to Query Management */}
           <Link to="/query-management" className="block outline-none">
             <Card className="h-full relative overflow-hidden transition-all hover:shadow-md hover:-translate-y-0.5 cursor-pointer border-border/60 hover:border-border">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -123,7 +123,9 @@ export function AlumniDashboard() {
               ) : (
                 receivedQueries.map((query) => {
                   const displayName = query.counterpartName || query.studentName || 'Conversation';
-                  const isWaitingForYou = query.isUnread;
+                  
+                  // 👇 THE FIX: Logic correctly checks who sent the last message!
+                  const isWaitingForYou = (query.Latest_Sender_Role || 'student') !== user?.role;
 
                   return (
                     <Link
