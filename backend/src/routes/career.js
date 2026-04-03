@@ -6,7 +6,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
 router.get('/', authenticate, requireRole('alumni'), async (req, res) => {
   try {
     const [rows] = await db.query(
-      'SELECT * FROM CAREER_HISTORY WHERE Alumni_ID = ? ORDER BY Start_Year ASC',
+      'SELECT * FROM career_history WHERE Alumni_ID = ? ORDER BY Start_Year ASC',
       [req.user.subId]
     );
     res.json(rows);
@@ -27,7 +27,7 @@ router.post('/', authenticate, requireRole('alumni'), async (req, res) => {
     }
 
     const [result] = await db.query(
-      'INSERT INTO CAREER_HISTORY (Alumni_ID, Company_Name, Job_Role, Start_Year, End_Year) VALUES (?,?,?,?,?)',
+      'INSERT INTO career_history (Alumni_ID, Company_Name, Job_Role, Start_Year, End_Year) VALUES (?,?,?,?,?)',
       [req.user.subId, companyName, jobRole, startYear, endYear ?? null]
     );
     
@@ -44,7 +44,7 @@ router.put('/:careerId', authenticate, requireRole('alumni'), async (req, res) =
     const { companyName, jobRole, startYear, endYear } = req.body;
 
     const [result] = await db.query(
-      `UPDATE CAREER_HISTORY
+      `UPDATE career_history
        SET Company_Name = ?, Job_Role = ?, Start_Year = ?, End_Year = ?
        WHERE Career_ID = ? AND Alumni_ID = ?`,
       [companyName, jobRole, startYear, endYear ?? null, req.params.careerId, req.user.subId]
@@ -66,7 +66,7 @@ router.put('/:careerId', authenticate, requireRole('alumni'), async (req, res) =
 router.delete('/:careerId', authenticate, requireRole('alumni'), async (req, res) => {
   try {
     const [result] = await db.query(
-      'DELETE FROM CAREER_HISTORY WHERE Career_ID = ? AND Alumni_ID = ?',
+      'DELETE FROM career_history WHERE Career_ID = ? AND Alumni_ID = ?',
       [req.params.careerId, req.user.subId]
     );
 

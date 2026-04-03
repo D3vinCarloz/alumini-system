@@ -21,6 +21,15 @@ export function AlumniQueries() {
   const [receivedQueries, setReceivedQueries] = useState<Query[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+
+    return `${day}-${month}-${year}`;
+  };
+
   useEffect(() => {
     apiFetch<Query[]>('/queries')
       .then(setReceivedQueries)
@@ -97,7 +106,7 @@ export function AlumniQueries() {
                         </Badge>
                       </td>
                       <td className="py-4 px-4 text-muted-foreground">
-                        {new Date(query.Query_Date).toLocaleDateString()}
+                        {formatDate(query.Query_Date)}
                       </td>
                       <td className="py-4 px-4">
                         <Link
