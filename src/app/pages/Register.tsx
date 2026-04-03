@@ -4,29 +4,26 @@ import { apiFetch } from '../lib/api';
 import { toast } from 'sonner';
 import {
   GraduationCap, User, Lock, Mail, BookOpen,
-  Hash, Calendar, ArrowRight, Eye, EyeOff, CheckCircle,
+  Hash, Calendar, ArrowRight, Eye, EyeOff, CheckCircle, Sparkles,
 } from 'lucide-react';
+import { Card, CardContent } from '../components/ui/card';
 
 type Role = 'student' | 'alumni';
 
 export function Register() {
-  const navigate  = useNavigate();
-  const [role, setRole]         = useState<Role>('student');
-  const [step, setStep]         = useState<1 | 2>(1);
-  const [loading, setLoading]   = useState(false);
+  const navigate = useNavigate();
+  const [role, setRole] = useState<Role>('student');
+  const [step, setStep] = useState<1 | 2>(1);
+  const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
-
-  // Step 1 fields
-  const [name, setName]         = useState('');
-  const [email, setEmail]       = useState('');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPass, setConfirmPass] = useState('');
-
-  // Step 2 fields
-  const [department, setDepartment]   = useState('');
-  const [rollNo, setRollNo]           = useState('');
+  const [department, setDepartment] = useState('');
+  const [rollNo, setRollNo] = useState('');
   const [graduationYear, setGraduationYear] = useState('');
-  const [batch, setBatch]             = useState('');
+  const [batch, setBatch] = useState('');
 
   const handleStep1 = () => {
     if (!name.trim() || !email.trim() || !password) {
@@ -54,14 +51,14 @@ export function Register() {
       await apiFetch('/auth/register', {
         method: 'POST',
         body: JSON.stringify({
-          name:           name.trim(),
-          email:          email.trim().toLowerCase(),
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
           password,
           role,
-          department:     department.trim(),
-          rollNo:         rollNo.trim(),
+          department: department.trim(),
+          rollNo: rollNo.trim(),
           graduationYear: graduationYear ? parseInt(graduationYear) : null,
-          batch:          batch.trim(),
+          batch: batch.trim(),
         }),
       });
       toast.success('Account created! You can now log in.');
@@ -74,283 +71,256 @@ export function Register() {
   };
 
   const roles = [
-    { value: 'student' as Role, label: 'Student',  icon: GraduationCap, desc: 'Connect with alumni' },
-    { value: 'alumni'  as Role, label: 'Alumni',   icon: User,          desc: 'Guide students' },
+    { value: 'student' as Role, label: 'Student', icon: GraduationCap, desc: 'Discover alumni and career guidance' },
+    { value: 'alumni' as Role, label: 'Alumni', icon: User, desc: 'Mentor students and share opportunities' },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-50 to-zinc-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="relative min-h-screen overflow-hidden bg-[#f5f2ea]">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(31,122,109,0.18),transparent_30%),radial-gradient(circle_at_bottom_right,rgba(24,59,91,0.14),transparent_35%)]" />
+      <div className="relative mx-auto grid min-h-screen max-w-7xl items-center gap-8 px-4 py-10 lg:grid-cols-[0.95fr_1.05fr] lg:px-8">
+        <div className="space-y-6">
+          <div className="inline-flex items-center gap-2 rounded-full border border-primary/10 bg-white/75 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-primary shadow-sm backdrop-blur">
+            <Sparkles className="size-3.5" />
+            Create Account
+          </div>
+          <div className="space-y-3">
+            <h1 className="max-w-xl text-4xl font-bold tracking-tight md:text-5xl">
+              Join the alumni network.
+            </h1>
+            <p className="text-lg font-medium text-muted-foreground">2 quick steps.</p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Card className="border-none bg-white/70">
+              <CardContent className="p-5">
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Step 1</p>
+                <h3 className="mt-2 text-lg font-semibold">Basic Info</h3>
+              </CardContent>
+            </Card>
+            <Card className="border-none bg-white/70">
+              <CardContent className="p-5">
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Step 2</p>
+                <h3 className="mt-2 text-lg font-semibold">Profile</h3>
+              </CardContent>
+            </Card>
+            <Card className="border-none bg-white/70">
+              <CardContent className="p-5">
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Then</p>
+                <h3 className="mt-2 text-lg font-semibold">Get Started</h3>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
 
-        {/* Card */}
-        <div className="bg-white rounded-2xl shadow-xl p-8 space-y-6">
-
-          {/* Header */}
-          <div className="space-y-1">
-            <div className="flex items-center justify-between">
-              <h1 className="text-2xl font-bold text-gray-900">Create account</h1>
-              {/* Step indicator */}
-              <div className="flex items-center gap-1.5">
-                <div className={`size-2 rounded-full transition-colors ${step >= 1 ? 'bg-primary' : 'bg-gray-200'}`} />
-                <div className={`size-2 rounded-full transition-colors ${step >= 2 ? 'bg-primary' : 'bg-gray-200'}`} />
+        <div className="mx-auto w-full max-w-xl">
+          <div className="rounded-[2rem] border border-border/70 bg-white/82 p-7 shadow-[0_35px_90px_rgba(24,59,91,0.14)] backdrop-blur md:p-8">
+            <div className="mb-8 flex items-center justify-between">
+              <div>
+                <h2 className="text-3xl font-bold">Create account</h2>
+                <p className="mt-2 text-sm text-muted-foreground">{step === 1 ? 'Step 1' : 'Step 2'}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className={`h-2.5 w-10 rounded-full ${step >= 1 ? 'bg-primary' : 'bg-muted'}`} />
+                <div className={`h-2.5 w-10 rounded-full ${step >= 2 ? 'bg-primary' : 'bg-muted'}`} />
               </div>
             </div>
-            <p className="text-sm text-gray-500">
-              {step === 1 ? 'Enter your basic details to get started' : 'Tell us a bit more about yourself'}
-            </p>
-          </div>
 
-          {/* Step 1 — Basic info */}
-          {step === 1 && (
-            <div className="space-y-5">
-
-              {/* Role selector */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">I am a...</label>
+            {step === 1 && (
+              <div className="space-y-5">
                 <div className="grid grid-cols-2 gap-3">
-                  {roles.map(r => {
+                  {roles.map((r) => {
                     const Icon = r.icon;
                     const isSelected = role === r.value;
                     return (
                       <button
                         key={r.value}
+                        type="button"
                         onClick={() => setRole(r.value)}
-                        className={`relative p-4 rounded-xl border-2 transition-all text-center ${
-                          isSelected
-                            ? 'border-primary bg-primary/5'
-                            : 'border-gray-200 hover:border-gray-300 bg-white'
-                        }`}
+                        className={`rounded-[1.5rem] border p-4 text-left transition-all ${isSelected ? 'border-primary bg-primary/5 shadow-sm' : 'border-border/70 bg-[#fbfaf7] hover:border-primary/30'}`}
                       >
-                        {isSelected && (
-                          <span className="absolute top-2 right-2 size-2 rounded-full bg-primary" />
-                        )}
-                        <Icon className={`size-6 mx-auto mb-1.5 ${isSelected ? 'text-primary' : 'text-gray-400'}`} />
-                        <p className={`text-xs font-semibold uppercase tracking-wide ${isSelected ? 'text-primary' : 'text-gray-500'}`}>
-                          {r.label}
-                        </p>
-                        <p className="text-[10px] text-gray-400 mt-0.5">{r.desc}</p>
+                        <Icon className={`size-6 ${isSelected ? 'text-primary' : 'text-muted-foreground'}`} />
+                        <p className="mt-4 text-sm font-semibold uppercase tracking-[0.18em]">{r.label}</p>
+                        <p className="mt-2 text-sm leading-6 text-muted-foreground">{r.desc}</p>
                       </button>
                     );
                   })}
                 </div>
-              </div>
 
-              {/* Name */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-gray-700">Full Name *</label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+                <Field label="Full Name *" icon={User}>
                   <input
                     type="text"
                     placeholder="e.g., Abhishek S A"
                     value={name}
-                    onChange={e => setName(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all bg-gray-50"
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full bg-transparent text-sm outline-none"
                   />
-                </div>
-              </div>
+                </Field>
 
-              {/* Email */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-gray-700">Email Address *</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+                <Field label="Email Address *" icon={Mail}>
                   <input
                     type="email"
                     placeholder="name@email.com"
                     value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all bg-gray-50"
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full bg-transparent text-sm outline-none"
                   />
-                </div>
-              </div>
+                </Field>
 
-              {/* Password */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-gray-700">Password *</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+                <Field label="Password *" icon={Lock}>
                   <input
                     type={showPass ? 'text' : 'password'}
                     placeholder="Min. 6 characters"
                     value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    className="w-full pl-10 pr-10 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all bg-gray-50"
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full bg-transparent pr-10 text-sm outline-none"
                   />
                   <button
                     type="button"
-                    onClick={() => setShowPass(p => !p)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    onClick={() => setShowPass((p) => !p)}
+                    className="text-muted-foreground transition-colors hover:text-foreground"
                   >
                     {showPass ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                   </button>
-                </div>
-              </div>
+                </Field>
 
-              {/* Confirm password */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-gray-700">Confirm Password *</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+                <Field label="Confirm Password *" icon={Lock}>
                   <input
                     type="password"
                     placeholder="Re-enter your password"
                     value={confirmPass}
-                    onChange={e => setConfirmPass(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && handleStep1()}
-                    className={`w-full pl-10 pr-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all bg-gray-50 ${
-                      confirmPass && confirmPass !== password
-                        ? 'border-red-300'
-                        : 'border-gray-200'
-                    }`}
+                    onChange={(e) => setConfirmPass(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleStep1()}
+                    className="w-full bg-transparent text-sm outline-none"
                   />
                   {confirmPass && confirmPass === password && (
-                    <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-emerald-500" />
+                    <CheckCircle className="size-4 text-emerald-500" />
                   )}
-                </div>
+                </Field>
                 {confirmPass && confirmPass !== password && (
-                  <p className="text-xs text-red-500">Passwords do not match</p>
+                  <p className="text-xs text-destructive">Passwords do not match</p>
                 )}
+
+                <button
+                  type="button"
+                  onClick={handleStep1}
+                  className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary text-sm font-semibold text-primary-foreground shadow-[0_12px_30px_rgba(24,59,91,0.18)] transition-transform hover:-translate-y-0.5"
+                >
+                  Continue
+                  <ArrowRight className="size-4" />
+                </button>
               </div>
+            )}
 
-              <button
-                onClick={handleStep1}
-                className="w-full py-3 rounded-xl bg-gray-900 text-white text-sm font-semibold flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors"
-              >
-                Continue <ArrowRight className="size-4" />
-              </button>
-            </div>
-          )}
+            {step === 2 && (
+              <div className="space-y-5">
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  Back
+                </button>
 
-          {/* Step 2 — Profile details */}
-          {step === 2 && (
-            <div className="space-y-5">
-
-              {/* Back button */}
-              <button
-                onClick={() => setStep(1)}
-                className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
-              >
-                ← Back
-              </button>
-
-              {/* Summary of step 1 */}
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-200">
-                <div className="size-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <span className="text-primary text-xs font-bold">
-                    {name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                  </span>
+                <div className="flex items-center gap-3 rounded-[1.5rem] border border-border/70 bg-[#fbfaf7] p-4">
+                  <div className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-xs font-bold text-primary">
+                    {name.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold">{name}</p>
+                    <p className="truncate text-xs text-muted-foreground">{email} · {role}</p>
+                  </div>
+                  <CheckCircle className="ml-auto size-4 shrink-0 text-emerald-500" />
                 </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium truncate">{name}</p>
-                  <p className="text-xs text-gray-500 truncate">{email} · {role}</p>
-                </div>
-                <CheckCircle className="size-4 text-emerald-500 shrink-0 ml-auto" />
-              </div>
 
-              {/* Department */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-gray-700">
-                  Department <span className="text-gray-400 font-normal">(optional)</span>
-                </label>
-                <div className="relative">
-                  <BookOpen className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+                <Field label="Department" icon={BookOpen}>
                   <input
                     type="text"
                     placeholder="e.g., Computer Science"
                     value={department}
-                    onChange={e => setDepartment(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all bg-gray-50"
+                    onChange={(e) => setDepartment(e.target.value)}
+                    className="w-full bg-transparent text-sm outline-none"
                   />
-                </div>
-              </div>
+                </Field>
 
-              {/* Student: Roll No | Alumni: Graduation Year + Batch */}
-              {role === 'student' ? (
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-gray-700">
-                    Roll Number <span className="text-gray-400 font-normal">(optional)</span>
-                  </label>
-                  <div className="relative">
-                    <Hash className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+                {role === 'student' ? (
+                  <Field label="Roll Number" icon={Hash}>
                     <input
                       type="text"
                       placeholder="e.g., CS2021001"
                       value={rollNo}
-                      onChange={e => setRollNo(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all bg-gray-50"
+                      onChange={(e) => setRollNo(e.target.value)}
+                      className="w-full bg-transparent text-sm outline-none"
                     />
-                  </div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-gray-700">
-                      Graduation Year <span className="text-gray-400 font-normal">(optional)</span>
-                    </label>
-                    <div className="relative">
-                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+                  </Field>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Field label="Graduation Year" icon={Calendar}>
                       <input
                         type="number"
                         placeholder="e.g., 2022"
                         value={graduationYear}
-                        onChange={e => setGraduationYear(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all bg-gray-50"
+                        onChange={(e) => setGraduationYear(e.target.value)}
+                        className="w-full bg-transparent text-sm outline-none"
                       />
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-gray-700">
-                      Batch <span className="text-gray-400 font-normal">(optional)</span>
-                    </label>
-                    <div className="relative">
-                      <Hash className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+                    </Field>
+                    <Field label="Batch" icon={Hash}>
                       <input
                         type="text"
-                        placeholder="e.g., 2018–2022"
+                        placeholder="e.g., 2018-2022"
                         value={batch}
-                        onChange={e => setBatch(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all bg-gray-50"
+                        onChange={(e) => setBatch(e.target.value)}
+                        className="w-full bg-transparent text-sm outline-none"
                       />
-                    </div>
+                    </Field>
                   </div>
-                </div>
-              )}
-
-              {/* Alumni notice */}
-              {role === 'alumni' && (
-                <div className="flex gap-2 p-3 rounded-xl bg-amber-50 border border-amber-200">
-                  <span className="text-amber-500 shrink-0 mt-0.5">ℹ</span>
-                  <p className="text-xs text-amber-700">
-                    Alumni accounts require admin verification before students can view your profile.
-                    You can complete your profile after registration.
-                  </p>
-                </div>
-              )}
-
-              <button
-                onClick={handleRegister}
-                disabled={loading}
-                className="w-full py-3 rounded-xl bg-gray-900 text-white text-sm font-semibold flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors disabled:opacity-60"
-              >
-                {loading ? (
-                  <span className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <>Create Account <ArrowRight className="size-4" /></>
                 )}
-              </button>
-            </div>
-          )}
 
-          {/* Footer */}
-          <p className="text-center text-sm text-gray-500">
-            Already have an account?{' '}
-            <Link to="/login" className="text-primary font-semibold hover:underline">
-              Sign in
-            </Link>
-          </p>
+                {role === 'alumni' && (
+                  <div className="rounded-[1.5rem] border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
+                    Alumni accounts require admin verification before students can discover the profile publicly.
+                  </div>
+                )}
 
+                <button
+                  type="button"
+                  onClick={handleRegister}
+                  disabled={loading}
+                  className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary text-sm font-semibold text-primary-foreground shadow-[0_12px_30px_rgba(24,59,91,0.18)] transition-transform hover:-translate-y-0.5 disabled:opacity-60"
+                >
+                  {loading ? <span className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" /> : 'Create Account'}
+                  {!loading && <ArrowRight className="size-4" />}
+                </button>
+              </div>
+            )}
+
+            <p className="mt-6 text-center text-sm text-muted-foreground">
+              Already have an account?{' '}
+              <Link to="/login" className="font-semibold text-primary hover:underline">
+                Sign in
+              </Link>
+            </p>
+          </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function Field({
+  label,
+  icon: Icon,
+  children,
+}: {
+  label: string;
+  icon: React.ElementType;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-2">
+      <label className="text-sm font-medium text-foreground">{label}</label>
+      <div className="flex items-center gap-3 rounded-[1.25rem] border border-border/70 bg-[#fbfaf7] px-4 py-3">
+        <Icon className="size-4 shrink-0 text-muted-foreground" />
+        {children}
       </div>
     </div>
   );

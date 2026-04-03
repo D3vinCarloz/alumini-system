@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
+import { PageHero } from '../../components/layout/PageHero';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Users, MessageSquare, Clock } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
@@ -64,8 +65,17 @@ export function AdminDashboard() {
   return (
     <DashboardLayout title="Admin Dashboard">
       <div className="space-y-6">
+        <PageHero
+          eyebrow="Control Center"
+          title="Platform health, verification flow, and query activity in one place."
+          description="The admin view now starts with a stronger command layer so the system status reads more like an operational dashboard than a plain stack of cards."
+          stats={[
+            { label: 'Users', value: loading ? '...' : stats.totalUsers },
+            { label: 'Queries', value: loading ? '...' : stats.totalQueries },
+            { label: 'Pending Verify', value: loading ? '...' : stats.pendingVerifications },
+          ]}
+        />
 
-        {/* ── Stats Cards ─────────────────────────────────────────────────── */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">

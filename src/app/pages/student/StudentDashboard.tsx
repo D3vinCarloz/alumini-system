@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
+import { PageHero } from '../../components/layout/PageHero';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -187,50 +188,53 @@ export function StudentDashboard() {
     <DashboardLayout title="Student Dashboard">
       <div className="space-y-6">
 
-        <div className="relative rounded-2xl overflow-hidden border border-border bg-gradient-to-br from-primary/5 via-background to-primary/10 p-6">
-          <div className="pointer-events-none absolute -right-10 -top-10 size-52 rounded-full bg-primary/5" />
-          <div className="pointer-events-none absolute right-20 bottom-0 size-28 rounded-full bg-primary/5" />
-
-          <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground font-medium">{greeting},</p>
-              <h1 className="text-2xl font-bold tracking-tight">{firstName} 👋</h1>
-              <p className="text-sm text-muted-foreground">
-                {loadingQueries
-                  ? 'Loading your queries...'
-                  : pendingQueries > 0
-                  ? `You have ${pendingQueries} pending quer${pendingQueries === 1 ? 'y' : 'ies'} awaiting a response.`
-                  : 'All your queries have been answered. Keep exploring!'}
-              </p>
-
-              {profileCompletion < 100 && (
-                <div className="pt-2 space-y-1">
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>Profile completion</span>
-                    <span className="font-medium text-foreground">{profileCompletion}%</span>
-                  </div>
-                  <div className="h-1.5 w-56 rounded-full bg-muted overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-primary transition-all duration-500"
-                      style={{ width: `${profileCompletion}%` }}
-                    />
-                  </div>
-                  <p className="text-xs text-amber-600">
-                    {!profile?.Department && '· Department missing '}
-                    {!profile?.Roll_No    && '· Roll No missing'}
-                  </p>
-                </div>
-              )}
-            </div>
-
+        <PageHero
+          eyebrow={greeting}
+          title={`${firstName}, your student workspace is ready.`}
+          description={
+            loadingQueries
+              ? 'Loading your latest activity, queries, and opportunities.'
+              : pendingQueries > 0
+                ? `You have ${pendingQueries} pending quer${pendingQueries === 1 ? 'y' : 'ies'} awaiting a response.`
+                : 'All your queries have been answered. Keep exploring mentors, jobs, and events.'
+          }
+          actions={(
             <Link to="/profile">
-              <Button variant="default" size="sm" className="gap-2 shrink-0">
+              <Button variant="secondary" className="gap-2 bg-white text-primary hover:bg-white/90">
                 <GraduationCap className="size-4" />
                 {profileCompletion === 100 ? 'View Profile' : 'Complete Profile'}
               </Button>
             </Link>
-          </div>
-        </div>
+          )}
+          stats={[
+            { label: 'Profile', value: `${profileCompletion}%` },
+            { label: 'Pending', value: loadingQueries ? '...' : pendingQueries },
+            { label: 'Answered', value: loadingQueries ? '...' : answeredQueries },
+            { label: 'Applications', value: appliedJobIds.size },
+          ]}
+        >
+          {profileCompletion < 100 ? (
+            <div className="space-y-3">
+              <p className="text-xs uppercase tracking-[0.2em] text-white/60">Completion Notes</p>
+              <div className="h-2 rounded-full bg-white/15">
+                <div className="h-full rounded-full bg-white" style={{ width: `${profileCompletion}%` }} />
+              </div>
+              <p className="text-sm text-white/80">
+                Missing details:
+                {!profile?.Department ? ' department' : ''}
+                {!profile?.Department && !profile?.Roll_No ? ' and' : ''}
+                {!profile?.Roll_No ? ' roll number' : ''}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-xs uppercase tracking-[0.2em] text-white/60">Momentum</p>
+              <p className="text-sm leading-6 text-white/85">
+                Your profile is complete, so you can focus on alumni discovery, conversations, and applications.
+              </p>
+            </div>
+          )}
+        </PageHero>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <StatCard

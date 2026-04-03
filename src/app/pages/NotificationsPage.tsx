@@ -1,25 +1,34 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { DashboardLayout } from '../components/layout/DashboardLayout';
+import { PageHero } from '../components/layout/PageHero';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { MessageSquare, Trash2, BellOff } from 'lucide-react';
+import { BellOff, MessageSquare, Trash2 } from 'lucide-react';
 import { apiFetch } from '../lib/api';
 import { toast } from 'sonner';
 
+interface NotificationItem {
+  Notification_ID: number;
+  Title: string;
+  Message: string;
+  Is_Read: boolean;
+  Link?: string;
+  created_at: string;
+}
+
 export function NotificationsPage() {
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Helper to shout at the Header to refresh the bell badge
   const refreshBell = () => {
     window.dispatchEvent(new Event('notifications-updated'));
   };
 
   const loadNotifications = async () => {
     try {
-      const data = await apiFetch<any[]>('/notifications');
+      const data = await apiFetch<NotificationItem[]>('/notifications');
       setNotifications(data);
       refreshBell();
     } catch (err) {
@@ -34,18 +43,18 @@ export function NotificationsPage() {
   }, []);
 
   const handleDelete = async (e: React.MouseEvent, id: number) => {
-    e.stopPropagation(); // 👈 Prevents the click from opening the chat link
+    e.stopPropagation();
     try {
       await apiFetch(`/notifications/${id}`, { method: 'DELETE' });
-      setNotifications(prev => prev.filter(n => n.Notification_ID !== id));
-      refreshBell(); // Update bell icon immediately
+      setNotifications((prev) => prev.filter((n) => n.Notification_ID !== id));
+      refreshBell();
       toast.success('Notification removed');
     } catch (err) {
       toast.error('Could not delete notification');
     }
   };
 
-  const handleNotificationClick = async (n: any) => {
+  const handleNotificationClick = async (n: NotificationItem) => {
     if (!n.Is_Read) {
       await apiFetch(`/notifications/${n.Notification_ID}/read`, { method: 'PATCH' });
     }
@@ -56,55 +65,86 @@ export function NotificationsPage() {
     }
   };
 
+  const unreadCount = notifications.filter((n) => !n.Is_Read).length;
+
   return (
     <DashboardLayout title="Notifications">
-      <div className="max-w-2xl mx-auto space-y-4">
-        <h2 className="text-2xl font-bold">Your Notifications</h2>
-        
-        <Card>
-          <CardContent className="p-0 divide-y divide-border">
-            {loading ? (
-              <div className="p-12 text-center text-muted-foreground">Loading...</div>
-            ) : notifications.length === 0 ? (
-              <div className="p-20 text-center">
-                <BellOff className="size-12 mx-auto mb-4 opacity-20" />
-                <p className="text-muted-foreground">No notifications yet.</p>
-              </div>
-            ) : (
-              notifications.map((n) => (
-                <div
-                  key={n.Notification_ID}
-                  onClick={() => handleNotificationClick(n)}
-                  className={`flex items-start justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors ${
-                    !n.Is_Read ? 'bg-primary/5 border-l-4 border-l-primary' : ''
-                  }`}
-                >
-                  <div className="flex gap-4">
-                    <div className="mt-1 p-2 bg-secondary rounded-full">
-                      <MessageSquare className="size-4 text-primary" />
-                    </div>
-                    <div>
-                      <p className={`text-sm ${!n.Is_Read ? 'font-bold' : 'font-medium'}`}>{n.Title}</p>
-                      <p className="text-xs text-muted-foreground">{n.Message}</p>
-                      <p className="text-[10px] text-muted-foreground mt-1">
-                        {new Date(n.created_at).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="shrink-0 text-muted-foreground hover:text-destructive"
-                    onClick={(e) => handleDelete(e, n.Notification_ID)}
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
+      <div className="space-y-6">
+        <PageHero
+          eyebrow="Inbox"
+          title="Notifications now feel like a dedicated message center."
+          description="Important updates are separated with clearer hierarchy, stronger read states, and more breathing room so this page feels intentional instead of flat."
+          stats={[
+            { label: 'Total', value: loading ? '...' : notifications.length },
+            { label: 'Unread', value: loading ? '...' : unreadCount },
+            { label: 'Read', value: loading ? '...' : Math.max(notifications.length - unreadCount, 0) },
+          ]}
+        />
+
+        <div className="mx-auto max-w-4xl">
+          <Card className="overflow-hidden border-none">
+            <CardContent className="p-0">
+              {loading ? (
+                <div className="space-y-4 p-6">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-24 animate-pulse rounded-[1.5rem] bg-muted" />
+                  ))}
                 </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
+              ) : notifications.length === 0 ? (
+                <div className="p-20 text-center">
+                  <BellOff className="mx-auto mb-4 size-14 opacity-30" />
+                  <p className="text-lg font-semibold">No notifications yet</p>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    When new replies, events, or updates arrive, they will appear here.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4 p-4 md:p-6">
+                  {notifications.map((n) => (
+                    <div
+                      key={n.Notification_ID}
+                      onClick={() => handleNotificationClick(n)}
+                      className={`group flex cursor-pointer items-start justify-between gap-4 rounded-[1.5rem] border p-5 transition-all ${
+                        !n.Is_Read
+                          ? 'border-primary/20 bg-primary/5 shadow-[0_18px_45px_rgba(24,59,91,0.06)]'
+                          : 'border-border/70 bg-white/70 hover:bg-white'
+                      }`}
+                    >
+                      <div className="flex gap-4">
+                        <div className={`mt-1 flex size-11 shrink-0 items-center justify-center rounded-2xl ${!n.Is_Read ? 'bg-primary text-primary-foreground' : 'bg-secondary text-primary'}`}>
+                          <MessageSquare className="size-4" />
+                        </div>
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className={`text-sm ${!n.Is_Read ? 'font-bold' : 'font-semibold'}`}>{n.Title}</p>
+                            {!n.Is_Read && (
+                              <span className="rounded-full bg-primary px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary-foreground">
+                                New
+                              </span>
+                            )}
+                          </div>
+                          <p className="mt-2 text-sm leading-6 text-muted-foreground">{n.Message}</p>
+                          <p className="mt-3 text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                            {new Date(n.created_at).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="shrink-0 text-muted-foreground hover:text-destructive"
+                        onClick={(e) => handleDelete(e, n.Notification_ID)}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </DashboardLayout>
   );

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
+import { PageHero } from '../../components/layout/PageHero';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { MessageSquare, Briefcase, Clock, MessageCircle, CheckCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -60,8 +61,17 @@ export function AlumniDashboard() {
   return (
     <DashboardLayout title="Alumni Dashboard">
       <div className="space-y-6">
+        <PageHero
+          eyebrow="Mentorship Hub"
+          title="Manage conversations and opportunities from one cleaner workspace."
+          description="Your dashboard opens with a stronger summary layer, so query load and job activity are immediately visible without the page feeling cramped."
+          stats={[
+            { label: 'Queries', value: loading ? '...' : totalQueries },
+            { label: 'Awaiting Reply', value: loading ? '...' : pendingQueries },
+            { label: 'Jobs Posted', value: loading ? '...' : jobsPosted },
+          ]}
+        />
 
-        {/* 👈 UPDATED: Stats Cards are now Clickable Links */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           
           {/* Link to Query Management (Update the 'to' path if your route is named differently, like '/my-queries') */}

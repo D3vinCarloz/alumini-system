@@ -2,43 +2,45 @@
 
 :root {
   --font-size: 16px;
-  --background: #fafafa;
-  --foreground: #0a0a0a;
-  --card: #ffffff;
-  --card-foreground: #0a0a0a;
-  --popover: #ffffff;
-  --popover-foreground: #0a0a0a;
-  --primary: #18181b;
-  --primary-foreground: #ffffff;
-  --secondary: #f4f4f5;
-  --secondary-foreground: #0a0a0a;
-  --muted: #f4f4f5;
-  --muted-foreground: #71717a;
-  --accent: #f4f4f5;
-  --accent-foreground: #18181b;
+  --background: #f5f2ea;
+  --foreground: #18212f;
+  --card: rgba(255, 255, 255, 0.88);
+  --card-foreground: #18212f;
+  --popover: #fffdf8;
+  --popover-foreground: #18212f;
+  --primary: #183b5b;
+  --primary-foreground: #f7fafc;
+  --secondary: #e6edf2;
+  --secondary-foreground: #183b5b;
+  --muted: #edf1f4;
+  --muted-foreground: #617080;
+  --accent: #d6e5e2;
+  --accent-foreground: #17353d;
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
-  --border: #e4e4e7;
-  --input: #e4e4e7;
-  --input-background: #ffffff;
-  --switch-background: #d4d4d8;
+  --border: rgba(24, 59, 91, 0.12);
+  --input: rgba(24, 59, 91, 0.14);
+  --input-background: rgba(255, 255, 255, 0.92);
+  --switch-background: #bbcad3;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --ring: #18181b;
-  --chart-1: #18181b;
-  --chart-2: #10b981;
-  --chart-3: #f59e0b;
-  --chart-4: #8b5cf6;
-  --chart-5: #ef4444;
-  --radius: 0.5rem;
-  --sidebar: #ffffff;
-  --sidebar-foreground: #0a0a0a;
-  --sidebar-primary: #18181b;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f4f4f5;
-  --sidebar-accent-foreground: #0a0a0a;
-  --sidebar-border: #e4e4e7;
-  --sidebar-ring: #18181b;
+  --ring: #285986;
+  --chart-1: #183b5b;
+  --chart-2: #1f7a6d;
+  --chart-3: #d68f38;
+  --chart-4: #6c9bcf;
+  --chart-5: #d95f4f;
+  --radius: 1.25rem;
+  --sidebar: rgba(251, 248, 241, 0.92);
+  --sidebar-foreground: #18212f;
+  --sidebar-primary: #183b5b;
+  --sidebar-primary-foreground: #f7fafc;
+  --sidebar-accent: #e8eff2;
+  --sidebar-accent-foreground: #183b5b;
+  --sidebar-border: rgba(24, 59, 91, 0.12);
+  --sidebar-ring: #285986;
+  --font-sans: 'Manrope', sans-serif;
+  --font-display: 'Sora', sans-serif;
 }
 
 .dark {
@@ -126,6 +128,12 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+    background-image:
+      radial-gradient(circle at top left, rgba(214, 229, 226, 0.75), transparent 28%),
+      radial-gradient(circle at top right, rgba(214, 196, 152, 0.28), transparent 22%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0.25));
+    background-attachment: fixed;
   }
 
   /**
@@ -141,24 +149,28 @@
     font-size: var(--text-2xl);
     font-weight: var(--font-weight-medium);
     line-height: 1.5;
+    font-family: var(--font-display);
   }
 
   h2 {
     font-size: var(--text-xl);
     font-weight: var(--font-weight-medium);
     line-height: 1.5;
+    font-family: var(--font-display);
   }
 
   h3 {
     font-size: var(--text-lg);
     font-weight: var(--font-weight-medium);
     line-height: 1.5;
+    font-family: var(--font-display);
   }
 
   h4 {
     font-size: var(--text-base);
     font-weight: var(--font-weight-medium);
     line-height: 1.5;
+    font-family: var(--font-display);
   }
 
   label {
@@ -177,5 +189,9 @@
     font-size: var(--text-base);
     font-weight: var(--font-weight-normal);
     line-height: 1.5;
+  }
+
+  ::selection {
+    background: rgba(40, 89, 134, 0.18);
   }
 }
