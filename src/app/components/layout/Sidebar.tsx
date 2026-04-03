@@ -13,7 +13,9 @@ import {
 } from 'lucide-react';
 import { useAuth, UserRole } from '../../context/AuthContext';
 import { cn } from '../ui/utils';
-import { getProfilePicUrl, apiFetch } from '../../lib/api';
+import { apiFetch } from '../../lib/api';
+// 👇 1. Import your UserAvatar component!
+import { UserAvatar } from '../UserAvatar';
 
 interface NavItem {
   label: string;
@@ -69,7 +71,7 @@ const navItems: NavItem[] = [
     label: 'Job Postings',
     icon: <FileText className="size-5" />,
     path: '/job-postings',
-    roles: ['alumni', 'student'], // 👈 Added 'student' here!
+    roles: ['alumni', 'student'],
   },
   {
     label: 'Verify Alumni',
@@ -104,12 +106,14 @@ export function Sidebar() {
 
   useEffect(() => {
     if (!user) return;
+    
     // Get from localStorage user object if available
     const stored = localStorage.getItem('user');
     if (stored) {
       const u = JSON.parse(stored);
       if (u.profilePic) setProfilePic(u.profilePic);
     }
+    
     // Fetch fresh from API
     const endpoint = user.role === 'student'
       ? '/student/profile'
@@ -175,17 +179,12 @@ export function Sidebar() {
             to={profilePath}
             className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-secondary transition-colors"
           >
-            <div className="size-8 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center shrink-0">
-              {getProfilePicUrl(profilePic) ? (
-                <img
-                  src={getProfilePicUrl(profilePic)!}
-                  alt={user.name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <User className="size-4 text-primary" />
-              )}
-            </div>
+            {/* 👇 2. Replaced the manual messy image logic with UserAvatar */}
+            <UserAvatar 
+              profilePic={profilePic} 
+              name={user.name} 
+              className="size-8 text-xs" 
+            />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate">{user.name}</p>
               <p className="text-xs text-muted-foreground capitalize">{user.role}</p>
@@ -194,17 +193,12 @@ export function Sidebar() {
         ) : (
           // Admin — not clickable, just displays info
           <div className="flex items-center gap-3 px-4 py-2 rounded-lg">
-            <div className="size-8 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center shrink-0">
-              {getProfilePicUrl(profilePic) ? (
-                <img
-                  src={getProfilePicUrl(profilePic)!}
-                  alt={user.name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <User className="size-4 text-primary" />
-              )}
-            </div>
+            {/* 👇 3. Replaced here for Admin as well */}
+            <UserAvatar 
+              profilePic={profilePic} 
+              name={user.name} 
+              className="size-8 text-xs" 
+            />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate">{user.name}</p>
               <p className="text-xs text-muted-foreground capitalize">{user.role}</p>

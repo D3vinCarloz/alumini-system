@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { Camera, Trash2 } from 'lucide-react';
-import { apiFetch, getProfilePicUrl } from '../lib/api';
+// 👇 Added apiUpload to your imports
+import { apiFetch, apiUpload, getProfilePicUrl } from '../lib/api';
 import { toast } from 'sonner';
 
 interface ProfilePicUploadProps {
@@ -18,7 +19,7 @@ export function ProfilePicUpload({
 }: ProfilePicUploadProps) {
   const [pic, setPic]             = useState<string | null>(currentPic);
   const [uploading, setUploading] = useState(false);
-  const [imgFailed, setImgFailed] = useState(false); // 👈 Tracks broken images
+  const [imgFailed, setImgFailed] = useState(false);
   const fileInputRef              = useRef<HTMLInputElement>(null);
 
   const sizeClasses = {
@@ -53,29 +54,22 @@ export function ProfilePicUpload({
 
     setUploading(true);
     try {
-      const token    = localStorage.getItem('token');
       const formData = new FormData();
-      formData.append('profilePic', file); // 👈 Must match backend precisely
+      formData.append('profilePic', file);
 
-      // Determine backend URL (fallback to localhost:5000 if env variable is missing)
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
-      const res = await fetch(`${API_URL}/profile-pic`, {
-        method: 'POST',
-        headers: { 
-          Authorization: `Bearer ${token}` 
-          // ❌ DO NOT put 'Content-Type' here!
-        },
-        body: formData,
-      });
-
-      if (!res.ok) throw new Error('Upload failed');
-      const data = await res.json();
+      // 👇 Replaced the raw fetch with our clean apiUpload function!
+      const data = await apiUpload<{ profilePic: string }>('/profile-pic', formData);
 
       setPic(data.profilePic);
-      setImgFailed(false); // 👈 Reset broken image state on successful upload
+      setImgFailed(false);
       onUpdate?.(data.profilePic);
       toast.success('Profile picture updated!');
+      
+      // 👇 THE FIX: Forces the browser to grab the new image instantly across the whole app
+      setTimeout(() => {
+        window.location.reload();
+      }, 700); // 700ms delay so the user can read the success toast before reloading
+      
     } catch (error) {
       console.error(error);
       toast.error('Failed to upload image. Please try again.');
@@ -90,9 +84,15 @@ export function ProfilePicUpload({
     try {
       await apiFetch('/profile-pic', { method: 'DELETE' });
       setPic(null);
-      setImgFailed(false); // Reset broken state
+      setImgFailed(false);
       onUpdate?.(null);
       toast.success('Profile picture removed');
+      
+      // 👇 Instant update for removal too
+      setTimeout(() => {
+        window.location.reload();
+      }, 700);
+
     } catch {
       toast.error('Failed to remove picture');
     } finally {
@@ -111,7 +111,7 @@ export function ProfilePicUpload({
             src={picUrl}
             alt={name}
             className="w-full h-full object-cover"
-            onError={() => setImgFailed(true)} // 👈 Switches to initials if image breaks
+            onError={() => setImgFailed(true)}
           />
         ) : (
           <span className={`font-bold text-primary ${iconSizes[size]}`}>
