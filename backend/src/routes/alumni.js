@@ -68,24 +68,27 @@ router.put('/my-profile', authenticate, requireRole('alumni'), async (req, res) 
 // GET /api/alumni/:alumniId — single alumni with career + jobs
 router.get('/:alumniId', authenticate, async (req, res) => {
   try {
+    const id = req.params.alumniId;
+    
     const [[alumni]] = await db.query(`
       SELECT a.Alumni_ID, u.User_ID, u.Name, u.Email, u.Profile_Pic, u.LinkedIn,
              a.Department, a.Graduation_Year, a.Batch,
              a.Contact_Info, a.Bio, a.Verification_Status
       FROM   alumni a
       JOIN   user u ON u.User_ID = a.User_ID
-      WHERE  a.Alumni_ID = ?
-    `, [req.params.alumniId]);
+      WHERE  a.Alumni_ID = ? OR u.User_ID = ?
+    `, [id, id]); // 👈 Checks both IDs safely
 
     if (!alumni) return res.status(404).json({ message: 'Alumni not found' });
 
+    // 👇 FIXED: Table names changed to lowercase to prevent Railway crashes
     const [career] = await db.query(
-      'SELECT * FROM CAREER_HISTORY WHERE Alumni_ID = ? ORDER BY Start_Year DESC',
-      [req.params.alumniId]
+      'SELECT * FROM career_history WHERE Alumni_ID = ? ORDER BY Start_Year DESC',
+      [alumni.Alumni_ID]
     );
     const [jobs] = await db.query(
       'SELECT * FROM job_postings WHERE Alumni_ID = ? ORDER BY Posting_Date DESC',
-      [req.params.alumniId]
+      [alumni.Alumni_ID]
     );
 
     res.json({ ...alumni, careerHistory: career, jobPostings: jobs });
@@ -127,9 +130,10 @@ router.patch('/:alumniId/reject', authenticate, requireRole('admin'), async (req
 router.put('/profile', authenticate, requireRole('alumni'), async (req, res) => {
   try {
     const { bio, contactInfo, batch } = req.body;
+    
     await db.query(
-      'UPDATE alumni SET Bio = ?, Contact_Info = ?, Batch = ? WHERE Alumni_ID = ?',
-      [bio, contactInfo, batch, req.user.subId]
+      'UPDATE alumni SET Bio = ?, Contact_Info = ?, Batch = ? WHERE User_ID = ?',
+      [bio, contactInfo, batch, req.user.id] // 👇 FIXED: Swapped subId for standard req.user.id
     );
     res.json({ message: 'Profile updated' });
   } catch (err) {
