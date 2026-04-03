@@ -85,6 +85,7 @@ export function ChatPage() {
   const profileLink = counterpartRole === 'alumni'
     ? `/alumni/${query.counterpartAlumniId || query.Alumni_ID}`
     : `/student/${query.Student_ID}`;
+  const initialIsMine = isMe(query.Initial_User_ID);
 
   return (
     <DashboardLayout title={`Chat with ${otherPersonName}`}>
@@ -113,10 +114,10 @@ export function ChatPage() {
           </CardHeader>
 
           <CardContent className="flex-1 space-y-4 overflow-y-auto bg-muted/10 p-6">
-            <div className={`flex ${isMe(query.messages?.[0]?.User_ID) ? 'justify-end' : user?.role === 'student' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${user?.role === 'student' || query.counterpartRole === 'student' ? 'bg-primary text-white rounded-br-none' : 'rounded-bl-none border bg-card'}`}>
+            <div className={`flex ${initialIsMine ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${initialIsMine ? 'rounded-br-none bg-primary text-white' : 'rounded-bl-none border bg-card'}`}>
                 {query.Content}
-                <p className={`mt-1 text-right text-[9px] opacity-60 ${user?.role === 'student' || query.counterpartRole === 'student' ? 'text-white/80' : 'text-muted-foreground'}`}>
+                <p className={`mt-1 text-right text-[9px] opacity-60 ${initialIsMine ? 'text-white/80' : 'text-muted-foreground'}`}>
                   {new Date(query.Query_Date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </p>
               </div>

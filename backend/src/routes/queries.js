@@ -242,6 +242,7 @@ router.get('/:queryId', authenticate, async (req, res) => {
         Content: thread.Content,
         Query_Date: thread.Query_Date,
         Status: thread.Status,
+        Initial_User_ID: thread.senderUserId,
         counterpartName,
         counterpartProfilePic,
         counterpartRole: 'alumni',
@@ -293,6 +294,7 @@ router.get('/:queryId', authenticate, async (req, res) => {
     res.json({
       ...queryData,
       Thread_ID: String(queryData.Query_ID),
+      Initial_User_ID: queryData.studentUserId,
       counterpartName: role === 'student' ? queryData.alumniName : queryData.studentName,
       counterpartProfilePic: role === 'student' ? queryData.alumniProfilePic : queryData.studentProfilePic,
       counterpartRole: role === 'student' ? 'alumni' : 'student',

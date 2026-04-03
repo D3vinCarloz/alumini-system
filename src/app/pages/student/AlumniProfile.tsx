@@ -189,78 +189,42 @@ export function AlumniProfile() {
                           </Button>
                         </DialogTrigger>
 
-                        <DialogContent className="max-w-2xl overflow-hidden rounded-[28px] border-none p-0 shadow-2xl">
+                        <DialogContent className="max-w-lg overflow-hidden rounded-2xl p-0">
                           <DialogHeader className="sr-only">
                             <DialogTitle>Start conversation with {alumni.Name}</DialogTitle>
                             <DialogDescription>Send your first message</DialogDescription>
                           </DialogHeader>
 
-                          <div className="bg-[linear-gradient(135deg,hsl(var(--primary))_0%,hsl(var(--primary))_45%,#111827_100%)] px-7 py-6 text-white">
-                            <div className="flex items-start gap-4">
-                              <UserAvatar profilePic={alumni.Profile_Pic} name={alumni.Name} className="size-14 border border-white/20 shadow-sm" />
-                              <div className="min-w-0 flex-1">
-                                <div className="flex flex-wrap items-center gap-3">
-                                  <h3 className="text-2xl font-semibold leading-tight">{alumni.Name}</h3>
-                                  {alumni.Verification_Status && (
-                                    <Badge className="bg-white/12 text-white ring-1 ring-white/20 hover:bg-white/15">
-                                      Verified Alumni
-                                    </Badge>
-                                  )}
-                                </div>
-                                <p className="mt-1 text-sm text-white/75">{alumni.Department}</p>
-                                <p className="mt-3 max-w-2xl text-sm leading-6 text-white/80">
-                                  Write a clear, respectful first message so they can understand your goal quickly and respond well.
-                                </p>
-                              </div>
+                          <div className="flex items-center gap-3 bg-primary px-6 py-4 text-white">
+                            <UserAvatar profilePic={alumni.Profile_Pic} name={alumni.Name} className="size-10 border border-white/20" />
+                            <div>
+                              <h3 className="font-semibold leading-tight">{alumni.Name}</h3>
+                              <p className="text-xs text-white/70">{alumni.Department}</p>
                             </div>
                           </div>
 
-                          <div className="grid md:grid-cols-[1fr_220px]">
-                            <div className="p-7">
-                              <div className="mb-4 flex items-center justify-between gap-3">
-                                <div>
-                                  <p className="text-sm font-semibold text-foreground">Message draft</p>
-                                  <p className="text-sm text-muted-foreground">
-                                    Introduce yourself, mention your goal, and ask one focused question.
-                                  </p>
-                                </div>
-                                <div className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
-                                  {queryText.trim().length} chars
-                                </div>
-                              </div>
+                          <div className="p-6">
+                            <p className="mb-4 text-sm text-muted-foreground">
+                              Send a message to start a conversation. You&apos;ll be notified when they reply.
+                            </p>
 
-                              <Textarea
-                                placeholder={`Hi ${alumni.Name.split(' ')[0]}, I came across your profile and would love to learn more about how you got started in ${sortedCareerHistory?.[0]?.Company_Name || 'your field'}.`}
-                                value={queryText}
-                                onChange={(e) => setQueryText(e.target.value)}
-                                rows={9}
-                                className="min-h-[240px] resize-none rounded-2xl border-border/70 bg-[linear-gradient(180deg,rgba(248,250,252,0.96)_0%,rgba(241,245,249,0.86)_100%)] px-5 py-4 text-[15px] leading-7 shadow-inner focus-visible:ring-2 focus-visible:ring-primary/25"
-                              />
+                            <Textarea
+                              placeholder="Type your message here..."
+                              value={queryText}
+                              onChange={(e) => setQueryText(e.target.value)}
+                              rows={5}
+                              className="min-h-[140px] resize-none rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm"
+                            />
 
-                              <div className="mt-5 flex flex-col gap-3 border-t border-border/60 pt-5 sm:flex-row sm:items-center sm:justify-between">
-                                <p className="text-xs leading-5 text-muted-foreground">
-                                  They will receive a notification when you send this message.
-                                </p>
-                                <Button
-                                  onClick={handleSendFirstMessage}
-                                  disabled={sending || !queryText.trim()}
-                                  className="h-12 rounded-full px-8 text-sm font-semibold shadow-md"
-                                >
-                                  {sending ? 'Sending...' : 'Send Message'}
-                                  <Send className="ml-2 size-4" />
-                                </Button>
-                              </div>
-                            </div>
-
-                            <div className="border-t bg-muted/20 p-7 md:border-l md:border-t-0">
-                              <div className="rounded-2xl border bg-background/80 p-5 shadow-sm">
-                                <p className="text-sm font-semibold text-foreground">Quick tips</p>
-                                <div className="mt-4 space-y-4 text-sm text-muted-foreground">
-                                  <p>Say who you are and why you are reaching out.</p>
-                                  <p>Ask about placements, projects, interviews, or career direction.</p>
-                                  <p>Keep the first message short enough to read in one glance.</p>
-                                </div>
-                              </div>
+                            <div className="mt-4 flex justify-end">
+                              <Button
+                                onClick={handleSendFirstMessage}
+                                disabled={sending || !queryText.trim()}
+                                className="w-full rounded-full px-8 sm:w-auto"
+                              >
+                                {sending ? 'Sending...' : 'Send Message'}
+                                <Send className="ml-2 size-4" />
+                              </Button>
                             </div>
                           </div>
                         </DialogContent>
