@@ -104,9 +104,33 @@ export function StudentJobsPage() {
   return (
     <DashboardLayout title="Job Postings">
       <div className="space-y-6">
+        <Card className="border-none">
+          <CardContent className="space-y-5 p-5 sm:p-6">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">Opportunities</p>
+                <h2 className="mt-2 text-2xl font-bold">Job Postings</h2>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[430px]">
+                <MiniJobStat title="Total Jobs" value={loading ? '...' : allJobs.length} />
+                <MiniJobStat title="Applications" value={applicationMap.size} />
+                <MiniJobStat title="Visible" value={loading ? '...' : filteredJobs.length} />
+              </div>
+            </div>
 
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by title, company or alumni name..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="hidden flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-2xl font-semibold">Browse Job Postings</h2>
             <p className="text-muted-foreground mt-1">
@@ -119,8 +143,7 @@ export function StudentJobsPage() {
           </div>
         </div>
 
-        {/* Search */}
-        <Card>
+        <Card className="hidden">
           <CardContent className="pt-4 pb-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
@@ -175,12 +198,13 @@ export function StudentJobsPage() {
               return (
                 <Card
                   key={job.Job_ID}
-                  className={`transition-shadow hover:shadow-md ${
+                  className={`overflow-hidden transition-shadow hover:shadow-md ${
                     isShortlisted ? 'border-emerald-200 bg-emerald-50/10' :
                     isRejected ? 'border-red-200 bg-red-50/10 opacity-70' :
                     isApplied ? 'border-blue-200' : ''
                   }`}
                 >
+                  <div className="h-1 bg-gradient-to-r from-primary/80 to-chart-2/80" />
                   <CardHeader className="pb-3">
                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                       <div className="flex items-start gap-4">
@@ -344,5 +368,14 @@ export function StudentJobsPage() {
         </DialogContent>
       </Dialog>
     </DashboardLayout>
+  );
+}
+
+function MiniJobStat({ title, value }: { title: string; value: string | number }) {
+  return (
+    <div className="rounded-[1.25rem] border border-border/70 bg-white/80 px-4 py-3">
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">{title}</p>
+      <p className="mt-2 text-2xl font-bold text-foreground">{value}</p>
+    </div>
   );
 }

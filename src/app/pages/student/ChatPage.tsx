@@ -4,7 +4,7 @@ import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
-import { Send, ArrowLeft } from 'lucide-react';
+import { Send, ArrowLeft, ExternalLink } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
@@ -96,21 +96,29 @@ export function ChatPage() {
 
         <Card className="flex h-[calc(100vh-220px)] flex-col overflow-hidden border-none bg-background shadow-lg">
           <CardHeader className="border-b bg-muted/10 px-6 py-3">
-            <Link to={profileLink} className="group flex w-fit items-center gap-3 outline-none transition-opacity hover:opacity-80">
-              <UserAvatar
-                profilePic={otherPersonPic}
-                name={otherPersonName}
-                className="size-11 border bg-background transition-colors group-hover:border-primary/50"
-              />
-              <div className="flex flex-col">
-                <CardTitle className="text-base font-bold text-foreground/90 transition-colors group-hover:text-primary">
-                  {otherPersonName}
-                </CardTitle>
-                <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  {counterpartRole}
-                </p>
-              </div>
-            </Link>
+            <div className="flex items-center justify-between gap-4">
+              <Link to={profileLink} className="group flex w-fit items-center gap-3 outline-none transition-opacity hover:opacity-80">
+                <UserAvatar
+                  profilePic={otherPersonPic}
+                  name={otherPersonName}
+                  className="size-11 border bg-background transition-colors group-hover:border-primary/50"
+                />
+                <div className="flex flex-col">
+                  <CardTitle className="text-base font-bold text-foreground/90 transition-colors group-hover:text-primary">
+                    {otherPersonName}
+                  </CardTitle>
+                  <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    {counterpartRole}
+                  </p>
+                </div>
+              </Link>
+              <Button variant="outline" size="sm" asChild>
+                <Link to={profileLink}>
+                  Open Profile
+                  <ExternalLink className="size-3.5" />
+                </Link>
+              </Button>
+            </div>
           </CardHeader>
 
           <CardContent className="flex-1 space-y-4 overflow-y-auto bg-muted/10 p-6">

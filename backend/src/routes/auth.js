@@ -22,7 +22,25 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
 
     // 2. Compare password
-    const valid = await bcrypt.compare(password, user.Password);
+    // Support both bcrypt-hashed passwords and legacy plain-text records.
+    let valid = false;
+
+    if (user.Password?.startsWith('$2')) {
+      valid = await bcrypt.compare(password, user.Password);
+    } else {
+      valid = password === user.Password;
+
+      // Upgrade legacy plain-text passwords to bcrypt after a successful login.
+      if (valid) {
+        const upgradedHash = await bcrypt.hash(password, 10);
+        await db.query(
+          'UPDATE user SET Password = ? WHERE User_ID = ?',
+          [upgradedHash, user.User_ID]
+        );
+        user.Password = upgradedHash;
+      }
+    }
+
     if (!valid)
       return res.status(401).json({ message: 'Invalid credentials' });
 

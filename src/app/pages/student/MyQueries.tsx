@@ -61,7 +61,20 @@ export function MyQueries() {
 
   return (
     <DashboardLayout title="Messages">
-      <div className="max-w-4xl mx-auto h-[calc(100vh-120px)] flex flex-col">
+      <div className="mx-auto flex h-[calc(100vh-120px)] max-w-5xl flex-col gap-4">
+        <Card className="border-none">
+          <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-6">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">Inbox</p>
+              <h2 className="mt-2 text-2xl font-bold">Messages</h2>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3 sm:min-w-[360px]">
+              <MiniInboxStat title="Total" value={queries.length} />
+              <MiniInboxStat title="Unread" value={queries.filter(q => q.isUnread).length} />
+              <MiniInboxStat title="Visible" value={filteredQueries.length} />
+            </div>
+          </CardContent>
+        </Card>
         
         <Card className="border-none shadow-sm flex flex-col h-full bg-background">
           <CardHeader className="border-b bg-muted/10 pb-4 pt-6 px-6">
@@ -172,5 +185,14 @@ export function MyQueries() {
         </Card>
       </div>
     </DashboardLayout>
+  );
+}
+
+function MiniInboxStat({ title, value }: { title: string; value: string | number }) {
+  return (
+    <div className="rounded-[1.1rem] border border-border/70 bg-white/80 px-4 py-3">
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">{title}</p>
+      <p className="mt-2 text-xl font-bold text-foreground">{value}</p>
+    </div>
   );
 }

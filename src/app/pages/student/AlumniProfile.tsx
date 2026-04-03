@@ -140,6 +140,11 @@ export function AlumniProfile() {
   const sortedCareerHistory = alumni.careerHistory
     ? [...alumni.careerHistory].sort((a, b) => b.Start_Year - a.Start_Year)
     : [];
+  const latestRole = sortedCareerHistory?.[0]?.Job_Role || 'Alumni Member';
+  const latestCompany = sortedCareerHistory?.[0]?.Company_Name || 'Company not added';
+  const careerYears = sortedCareerHistory.length > 0
+    ? `${sortedCareerHistory[sortedCareerHistory.length - 1].Start_Year} - ${sortedCareerHistory[0].End_Year || 'Present'}`
+    : 'Not added';
 
   const profileTabs = [
     { id: 'career' as const, label: 'Career History', icon: Briefcase },
@@ -170,9 +175,7 @@ export function AlumniProfile() {
                       )}
                     </h1>
                     <p className="mt-1 font-medium text-muted-foreground">
-                      {sortedCareerHistory?.[0]?.Job_Role
-                        ? `${sortedCareerHistory[0].Job_Role} at ${sortedCareerHistory[0].Company_Name}`
-                        : 'Alumni Member'}
+                      {latestRole} at {latestCompany}
                     </p>
                   </div>
 
@@ -234,10 +237,15 @@ export function AlumniProfile() {
                 </div>
 
                 {alumni.Bio && (
-                  <p className="mt-4 max-w-3xl rounded-lg border border-border/50 bg-muted/30 p-4 text-sm italic leading-relaxed text-foreground/80">
-                    "{alumni.Bio}"
+                  <p className="mt-4 max-w-3xl rounded-lg border border-border/50 bg-muted/30 p-4 text-sm leading-relaxed text-foreground/80">
+                    {alumni.Bio}
                   </p>
                 )}
+                <div className="grid gap-3 pt-2 sm:grid-cols-3">
+                  <ProfileMetric label="Role" value={latestRole} />
+                  <ProfileMetric label="Career Span" value={careerYears} />
+                  <ProfileMetric label="Open Jobs" value={`${alumni.jobPostings?.length || 0}`} />
+                </div>
               </div>
             </div>
           </CardContent>
@@ -475,5 +483,14 @@ export function AlumniProfile() {
         </div>
       </div>
     </DashboardLayout>
+  );
+}
+
+function ProfileMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-border/70 bg-background/80 px-4 py-3">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
+      <p className="mt-2 text-sm font-semibold text-foreground">{value}</p>
+    </div>
   );
 }
